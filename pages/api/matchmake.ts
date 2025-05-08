@@ -25,28 +25,48 @@ export default async function handler(
       return res.status(400).json({ error: 'Player ID or address is required' });
     }
 
-    // Get a random opponent from the database
-    // In a real implementation, we would match players by level, rating, etc.
-    const randomOpponent = await prisma.user.findFirst({
+    // Suraskime oponentų skaičių, kad galėtume atlikti atsitiktinį pasirinkimą
+    const opponentCount = await prisma.user.count({
       where: {
         address: {
           not: player // Don't match with self
         }
-      },
-      orderBy: {
-        // Random ordering to get a random opponent
-        id: 'asc'
       }
     });
+
+    let randomOpponent = null;
+
+    if (opponentCount > 0) {
+      // Jei turime potencialių oponentų, atsitiktinai pasirinkime vieną
+      // Naudojame SKIP, kad atsitiktinai pasirinktume vieną įrašą
+      const skip = Math.floor(Math.random() * opponentCount);
+      
+      randomOpponent = await prisma.user.findFirst({
+        where: {
+          address: {
+            not: player // Don't match with self
+          }
+        },
+        skip: skip,
+        take: 1
+      });
+    }
 
     // If no opponent found, create a guest opponent
     if (!randomOpponent) {
       // Generate a random guest ID
       const guestId = `guest-${Math.random().toString(36).substring(2, 10)}`;
       
+      // Create guest user in database so it can be referenced in fights
+      const guestUser = await prisma.user.create({
+        data: {
+          address: guestId
+        }
+      });
+
       // Return the guest opponent
       return res.status(200).json({
-        opponent: guestId
+        opponent: guestUser.address
       });
     }
 

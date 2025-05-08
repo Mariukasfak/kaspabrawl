@@ -138,23 +138,15 @@ export async function verifySignature(
       return false;
     }
 
-    // For now, we'll just implement a simplified version without full signature verification
-    // This is a temporary solution until we have a proper understanding of the Kaspa wallet API
-    
-    // In a production environment, we would:
-    // 1. Verify that the signature was created using the provided public key
-    // 2. Verify that the address matches the public key
-    
-    // For development purposes, we'll just accept the authentication
-    let isAddressValid = true;
-    
-    // Log for debugging
-    console.log(`Accepting authentication for address: ${address}`);
+    // Simplified signature verification for development purposes
+    // In production, we would use a more robust signature verification method
+    console.log(`Accepting wallet signature for address: ${address}`);
     
     // Mark the nonce as used to prevent replay attacks
     await markNonceAsUsed(message);
     
-    return isAddressValid;
+    // For development, we'll accept the authentication
+    return true;
   } catch (error) {
     console.error('Signature verification error:', error);
     return false;

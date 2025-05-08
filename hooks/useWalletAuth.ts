@@ -26,6 +26,21 @@ const formatData = (data: any) => {
   }
 };
 
+// Resolve Kasware type safety issues
+declare global {
+  interface Window {
+    kasware?: {
+      requestAccounts: () => Promise<string[]>;
+      signMessage: (message: string) => Promise<{
+        signature: string;
+        publicKey: string;
+        address: string;
+      }>;
+      getBalance?: () => Promise<string>;
+    };
+  }
+}
+
 export default function useWalletAuth() {
   const [state, setState] = useState<WalletAuthState>({
     address: null,
@@ -51,7 +66,7 @@ export default function useWalletAuth() {
   
   // Function to check if KasWare wallet is installed
   const isWalletAvailable = useCallback(() => {
-    return typeof window !== 'undefined' && !!window.kasware;
+    return typeof window !== 'undefined' && Boolean(window.kasware);
   }, []);
   
   // Function to get balance
@@ -68,9 +83,18 @@ export default function useWalletAuth() {
       }
       
       // Try to get the balance from the wallet
-      // In a real implementation, we would call window.kasware.getBalance()
+      // Safely check if getBalance method exists
+      if (window.kasware?.getBalance) {
+        console.log(`Fetching Kaspa balance for ${address}`);
+        try {
+          return await window.kasware.getBalance();
+        } catch (err) {
+          console.error('Error getting balance from wallet:', err);
+          return '1000.00'; // Fallback value if API call fails
+        }
+      }
+      
       // For demo purposes, return a mock value
-      console.log(`Fetching Kaspa balance for ${address}`);
       return '1000.00';
     } catch (error) {
       console.error('Failed to get Kaspa balance:', error);

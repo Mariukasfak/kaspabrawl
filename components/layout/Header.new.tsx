@@ -1,9 +1,9 @@
 import { useRef } from 'react';
 import Link from 'next/link';
-import useWalletAuth from '../hooks/useWalletAuth';
+import useWalletAuth from '../../hooks/useWalletAuth';
 import TokenBadge from './TokenBadge';
-import Alert from './Alert';
-import Spinner from './Spinner';
+import Alert from '../ui/Alert';
+import Spinner from '../ui/Spinner';
 
 const Header: React.FC = () => {
   const { 

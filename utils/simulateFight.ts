@@ -150,7 +150,6 @@ export async function simulateFight(playerAId: string, playerBId: string): Promi
     maxEnergy: 100,
     skills: [],
     design: getFighterDesignByAddress(playerB.address), // Add fighter design
-    design: getFighterDesignByAddress(playerB.address), // Add fighter design
   };
   
   // Add skills based on total stats including equipment
@@ -305,14 +304,7 @@ export async function simulateFight(playerAId: string, playerBId: string): Promi
   const winner = fighterA.hp <= 0 ? fighterB : fighterA;
   const loser = winner === fighterA ? fighterB : fighterA;
   
-  // Store fight result in database
-  await prisma.fightLog.create({
-    data: {
-      playerA: { connect: { id: playerAId } },
-      playerB: { connect: { id: playerBId } },
-      log: JSON.stringify(fightSteps), // Convert to string for SQLite
-    }
-  });
+  // Neišsaugome kovos rezultato čia, nes tai jau daroma fight.ts API
   
   return {
     winner: winner.id,
