@@ -44,12 +44,12 @@ class MainScene extends Phaser.Scene {
     this.load.image('fighter1', '/images/fighter-1.png');
     this.load.image('fighter2', '/images/fighter-2.png');
     this.load.image('background', '/images/arena-bg.png');
-    
+
     // Create placeholder if images don't exist
     this.load.on('filecomplete', (key: string) => {
       console.log(`Loaded: ${key}`);
     });
-    
+
     this.load.on('loaderror', (file: { key: string }) => {
       console.warn(`Failed to load: ${file.key}`);
       // Create fallback texture for missing images
@@ -66,12 +66,12 @@ class MainScene extends Phaser.Scene {
     // Initialize the scene
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
-    
+
     // Add background with particle effect
     try {
-      const background = this.add.image(width/2, height/2, 'background')
+      const background = this.add.image(width / 2, height / 2, 'background')
         .setDisplaySize(width, height);
-        
+
       // Create a texture key for particles
       const particleKey = 'particle';
       if (!this.textures.exists(particleKey)) {
@@ -80,9 +80,8 @@ class MainScene extends Phaser.Scene {
         graphics.fillCircle(4, 4, 4);
         graphics.generateTexture(particleKey, 8, 8);
       }
-      
+
       // Add particles with the custom texture
-      // In newer versions of Phaser, the particles API is different
       try {
         const particles = this.add.particles(0, 0, particleKey, {
           x: width / 2,
@@ -100,12 +99,12 @@ class MainScene extends Phaser.Scene {
       } catch (e) {
         console.warn('Failed to create particle effect:', e);
       }
-      
+
     } catch (e) {
       console.warn('Failed to add background image, using fallback');
-      this.add.rectangle(width/2, height/2, width, height, 0x1a1a2e);
+      this.add.rectangle(width / 2, height / 2, width, height, 0x1a1a2e);
     }
-    
+
     // Create action text
     this.actionText = this.add.text(
       width / 2,
@@ -118,7 +117,7 @@ class MainScene extends Phaser.Scene {
         wordWrap: { width: width * 0.8 }
       }
     ).setOrigin(0.5);
-    
+
     // If we have fight log data, start the animation
     if (this.fightSteps.length > 0) {
       this.initializeFighters();
@@ -134,7 +133,7 @@ class MainScene extends Phaser.Scene {
           align: 'center',
         }
       ).setOrigin(0.5);
-      
+
       // Add a simple animation
       this.add.rectangle(
         width / 2,
@@ -220,13 +219,10 @@ class MainScene extends Phaser.Scene {
     
     // Update the text to indicate start of battle
     if (this.actionText) {
-      this.actionText.setText('Battle begins! Click to start.');
+      this.actionText.setText('Battle begins!');
     }
-    
-    // Add click to advance
-    this.input.once('pointerdown', () => {
-      this.processNextStep();
-    });
+    // Start auto battle
+    this.time.delayedCall(1000, () => this.processNextStep());
   }
   
   processNextStep() {
@@ -236,28 +232,24 @@ class MainScene extends Phaser.Scene {
       }
       return;
     }
-    
     const step = this.fightSteps[this.currentStepIndex];
     this.processingStep = true;
-    
     // Update action text
     if (this.actionText) {
       this.actionText.setText(step.text);
     }
-    
     // Animate the attack
     if (step.type === 'attack' || step.type === 'skill' || step.type === 'critical') {
       // Determine which fighter is attacking
       const isFirstFighterAttacking = step.attacker === this.fightSteps[0].attacker;
       const attackingFighter = isFirstFighterAttacking ? this.fighter1 : this.fighter2;
       const defendingFighter = isFirstFighterAttacking ? this.fighter2 : this.fighter1;
-      
       if (attackingFighter && defendingFighter) {
         // Simple attack animation
         this.tweens.add({
           targets: attackingFighter,
-          x: isFirstFighterAttacking ? 
-            attackingFighter.x + 50 : 
+          x: isFirstFighterAttacking ?
+            attackingFighter.x + 50 :
             attackingFighter.x - 50,
           duration: 200,
           yoyo: true,
@@ -271,11 +263,9 @@ class MainScene extends Phaser.Scene {
                 yoyo: true,
                 repeat: 2
               });
-              
               // Update health bar
               this.updateHealthBars(step);
             }
-            
             // Show special effect if any
             if (step.specialEffect) {
               const effectText = this.add.text(
@@ -284,7 +274,6 @@ class MainScene extends Phaser.Scene {
                 step.specialEffect.name,
                 { fontSize: '20px', color: '#ff00ff' }
               ).setOrigin(0.5);
-              
               this.tweens.add({
                 targets: effectText,
                 y: effectText.y - 30,
@@ -293,16 +282,11 @@ class MainScene extends Phaser.Scene {
                 onComplete: () => effectText.destroy()
               });
             }
-            
             // Continue to next step after a delay
             this.time.delayedCall(1500, () => {
               this.currentStepIndex++;
               this.processingStep = false;
-              
-              // Add click to advance
-              this.input.once('pointerdown', () => {
-                this.processNextStep();
-              });
+              this.processNextStep();
             });
           }
         });
@@ -311,22 +295,17 @@ class MainScene extends Phaser.Scene {
       if (this.actionText) {
         this.actionText.setText(step.text);
       }
-      
       this.currentStepIndex++;
       this.processingStep = false;
+      this.time.delayedCall(1200, () => this.processNextStep());
     } else {
       // For other step types (dodge, block, etc.)
       this.updateHealthBars(step);
-      
       // Continue to next step after a delay
-      this.time.delayedCall(1500, () => {
+      this.time.delayedCall(1200, () => {
         this.currentStepIndex++;
         this.processingStep = false;
-        
-        // Add click to advance
-        this.input.once('pointerdown', () => {
-          this.processNextStep();
-        });
+        this.processNextStep();
       });
     }
   }
@@ -418,11 +397,23 @@ const PhaserGame: React.FC<GameProps> = ({ walletAddress, fightLog }) => {
 
       // Create the game instance
       gameRef.current = new Phaser.Game(config);
-      
-      // Pass fight log data to the scene if available
+      // Wait for the scene to be created before restarting with fightLog
       if (fightLog && gameRef.current) {
-        const scene = gameRef.current.scene.getScene('MainScene') as MainScene;
-        scene.scene.restart({ fightLog });
+        // Wait for the scene to be created and active
+        const tryRestart = () => {
+          if (
+            gameRef.current &&
+            gameRef.current.scene &&
+            gameRef.current.scene.isActive('MainScene')
+          ) {
+            const scene = gameRef.current.scene.getScene('MainScene') as MainScene;
+            scene.scene.restart({ fightLog });
+          } else {
+            // Try again on next tick
+            setTimeout(tryRestart, 50);
+          }
+        };
+        tryRestart();
       }
     }
 
@@ -437,7 +428,12 @@ const PhaserGame: React.FC<GameProps> = ({ walletAddress, fightLog }) => {
 
   // Update game when fightLog changes
   useEffect(() => {
-    if (gameRef.current && fightLog) {
+    if (
+      gameRef.current &&
+      fightLog &&
+      gameRef.current.scene &&
+      gameRef.current.scene.isActive('MainScene')
+    ) {
       const scene = gameRef.current.scene.getScene('MainScene') as MainScene;
       scene.scene.restart({ fightLog });
     }

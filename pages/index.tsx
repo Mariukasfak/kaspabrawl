@@ -27,7 +27,10 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentOpponent, setCurrentOpponent] = useState<string | null>(null);
   const [currentFightLog, setCurrentFightLog] = useState<FightResponse | null>(null);
-  
+  // Hydration guard
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+
   // Load recent battles
   const loadRecentBattles = async () => {
     try {
@@ -60,13 +63,22 @@ export default function Home() {
           <h2 className="text-3xl font-bold mb-4 text-purple-400">Welcome to Kaspa Brawl</h2>
           <p className="text-gray-300">
             A MyBrute-style fighting game powered by the Kaspa blockchain.
-            {!address ? 'Connect your KasWare wallet or play as guest to start your journey!' : 
-             isGuest ? 'You are playing in guest mode. Connect a KasWare wallet for the full experience!' : 
-             'Your wallet is connected. Enjoy the full game experience!'}
+            {!hydrated
+              ? ''
+              : !address
+                ? 'Connect your KasWare wallet or play as guest to start your journey!'
+                : isGuest
+                  ? 'You are playing in guest mode. Connect a KasWare wallet for the full experience!'
+                  : 'Your wallet is connected. Enjoy the full game experience!'}
           </p>
         </section>
-        
-        {address ? (
+        {/* Hydration guard for wallet UI */}
+        {!hydrated ? (
+          <div className="bg-gray-800 rounded-lg p-6 mb-8 text-center">
+            <Spinner className="mx-auto mb-2" />
+            <p className="text-gray-400">Loading...</p>
+          </div>
+        ) : address ? (
           <FighterProfile
             address={address}
             isGuest={isGuest}
@@ -76,7 +88,6 @@ export default function Home() {
                 setGameState('matchmaking');
                 setIsLoading(true);
                 setError(null);
-                
                 // Step 1: Find an opponent
                 const matchmakeResponse = await fetch('/api/matchmake', {
                   method: 'POST',
@@ -87,15 +98,12 @@ export default function Home() {
                     player: address
                   })
                 });
-                
                 if (!matchmakeResponse.ok) {
                   throw new Error('Failed to find opponent');
                 }
-                
                 const matchData: MatchmakeResponse = await matchmakeResponse.json();
                 setCurrentOpponent(matchData.opponent);
                 setGameState('fighting');
-                
                 // Step 2: Execute the fight
                 const fightResponse = await fetch('/api/fight', {
                   method: 'POST',
@@ -107,17 +115,13 @@ export default function Home() {
                     playerB: matchData.opponent
                   })
                 });
-                
                 if (!fightResponse.ok) {
                   throw new Error('Failed to execute fight');
                 }
-                
                 const fightData: FightResponse = await fightResponse.json();
                 setCurrentFightLog(fightData);
-                
                 // Step 3: Move to the arena page
                 router.push(`/arena?fightLogId=${fightData.fightLogId}`);
-                
                 // Load recent battles after a successful fight
                 loadRecentBattles();
               } catch (err) {
@@ -136,14 +140,14 @@ export default function Home() {
               The choice is yours!
             </p>
             <div className="flex justify-center space-x-4">
-              <button 
-                onClick={connectWallet} 
+              <button
+                onClick={connectWallet}
                 className="kaspa-button"
               >
                 Connect Wallet
               </button>
-              <button 
-                onClick={connectAsGuest} 
+              <button
+                onClick={connectAsGuest}
                 className="border border-purple-600 text-purple-400 hover:bg-purple-900 hover:text-white font-bold py-2 px-4 rounded transition-all duration-200"
               >
                 Play as Guest

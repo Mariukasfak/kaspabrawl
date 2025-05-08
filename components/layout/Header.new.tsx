@@ -20,6 +20,9 @@ const Header: React.FC = () => {
     brawlBalance,
     isWalletAvailable
   } = useWalletAuth();
+  // Hydration guard
+  const [hydrated, setHydrated] = require('react').useState(false);
+  require('react').useEffect(() => { setHydrated(true); }, []);
   
   const refreshBtnRef = useRef<HTMLButtonElement>(null);
   
@@ -51,7 +54,14 @@ const Header: React.FC = () => {
         </div>
         
         <div className="flex space-x-4 items-center">
-          {address ? (
+          {!hydrated ? (
+            <div className="flex space-x-2">
+              <button className="kaspa-button relative" disabled>
+                <Spinner size="sm" className="mr-2" />
+                Loading...
+              </button>
+            </div>
+          ) : address ? (
             <>
               <div className="flex space-x-2">
                 <TokenBadge 
@@ -76,7 +86,6 @@ const Header: React.FC = () => {
                   </svg>
                 </button>
               </div>
-              
               <div className="flex items-center">
                 <span className="mr-2 text-sm text-gray-300">
                   {isGuest ? (
@@ -110,7 +119,6 @@ const Header: React.FC = () => {
                   'Connect Wallet'
                 )}
               </button>
-              
               <button
                 onClick={connectAsGuest}
                 disabled={isConnecting}

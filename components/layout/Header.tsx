@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useWalletAuth from '../../hooks/useWalletAuth';
 import TokenBadge from '../ui/TokenBadge';
 import CustomAlert from '../ui/Alert';
@@ -68,6 +68,10 @@ const Header: React.FC = () => {
     brawlBalance,
     isWalletAvailable
   } = useWalletAuth();
+
+  // Hydration guard
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
   
   const refreshBtnRef = useRef<HTMLButtonElement>(null);
   
@@ -97,7 +101,7 @@ const Header: React.FC = () => {
         </div>
         
         <div className="flex space-x-4 items-center">
-          {address ? (
+          {hydrated && address ? (
             <>
               <div className="flex space-x-2">
                 <TokenBadge 
@@ -138,7 +142,7 @@ const Header: React.FC = () => {
                 </button>
               </div>
             </>
-          ) : (
+          ) : hydrated ? (
             <div className="flex space-x-2">
               <button
                 onClick={connectWallet}
@@ -168,7 +172,7 @@ const Header: React.FC = () => {
                 Play as Guest
               </button>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
       
