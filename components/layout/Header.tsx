@@ -1,15 +1,15 @@
 import { useEffect, useRef } from 'react';
-import useWalletAuth from '../hooks/useWalletAuth';
-import TokenBadge from './TokenBadge';
-import Alert from './Alert';
+import useWalletAuth from '../../hooks/useWalletAuth';
+import TokenBadge from '../ui/TokenBadge';
+import CustomAlert from '../ui/Alert';
 
-type AlertProps = {
+type HeaderAlertProps = {
   message: string;
   type?: 'error' | 'success' | 'warning' | 'info';
   onDismiss?: () => void;
 };
 
-const Alert: React.FC<AlertProps> = ({ message, type = 'error', onDismiss }) => {
+const HeaderAlert: React.FC<HeaderAlertProps> = ({ message, type = 'error', onDismiss }) => {
   // Auto-dismiss after 5 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -173,7 +173,7 @@ const Header: React.FC = () => {
       </div>
       
       {error && (
-        <Alert 
+        <HeaderAlert 
           message={`Error: ${error}`} 
           type="error" 
           onDismiss={() => {
@@ -183,7 +183,7 @@ const Header: React.FC = () => {
       )}
       
       {!isWalletAvailable && !isGuest && !address && (
-        <Alert
+        <HeaderAlert
           message="KasWare wallet extension not detected. Install it to connect with your Kaspa wallet."
           type="warning"
         />

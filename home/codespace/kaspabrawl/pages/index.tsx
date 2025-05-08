@@ -2,18 +2,18 @@ import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import Layout from '../components/Layout';
+import Layout from '../components/layout/Layout';
 import useWalletAuth from '../hooks/useWalletAuth';
-import Alert from '../components/Alert';
-import Spinner from '../components/Spinner';
-import MatchmakingOverlay from '../components/MatchmakingOverlay';
-import FighterCard from '../components/FighterCard';
-import FighterProfile from '../components/FighterProfile';
-import { FightLogListItem, MatchmakeResponse, FightResponse } from '../types/index';
+import Alert from '../components/ui/Alert';
+import Spinner from '../components/ui/Spinner';
+import MatchmakingOverlay from '../components/ui/MatchmakingOverlay';
+import FighterCard from '../components/fighter/FighterCard';
+import FighterProfile from '../components/fighter/FighterProfile';
+import { FightLogListItem, MatchmakeResponse, FightResponse } from '../types';
 import { getFighterDesignByAddress } from '../utils/fighterDesigns';
 
 // Dynamically load the Phaser component to prevent SSR issues
-const PhaserGame = dynamic(() => import('../components/PhaserGame'), {
+const PhaserGame = dynamic(() => import('../components/battle/PhaserGame'), {
   ssr: false,
 });
 

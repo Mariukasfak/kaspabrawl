@@ -9,7 +9,7 @@ import Spinner from '../components/ui/Spinner';
 import MatchmakingOverlay from '../components/ui/MatchmakingOverlay';
 import FighterCard from '../components/fighter/FighterCard';
 import FighterProfile from '../components/fighter/FighterProfile';
-import { FightLogListItem, MatchmakeResponse, FightResponse } from '../types/index';
+import { FightLogListItem, MatchmakeResponse, FightResponse } from '../types';
 import { getFighterDesignByAddress } from '../utils/fighterDesigns';
 
 // Dynamically load the Phaser component to prevent SSR issues

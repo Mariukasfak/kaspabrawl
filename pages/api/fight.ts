@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../lib/prisma';
-import { FightRequest, FightResponse } from '../../types/index';
+import { FightRequest, FightResponse } from '../../types';
 import { simulateFight } from '../../utils/simulateFight';
 
 /**

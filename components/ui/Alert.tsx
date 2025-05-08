@@ -1,5 +1,10 @@
 import React, { useEffect } from 'react';
-import { AlertProps } from '../types/index';
+
+interface AlertProps {
+  message: string;
+  type?: 'error' | 'success' | 'warning' | 'info';
+  onDismiss?: () => void;
+}
 
 const Alert: React.FC<AlertProps> = ({ message, type = 'error', onDismiss }) => {
   // Auto-dismiss after 5 seconds

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
-import AutoLoginButton from '../components/AutoLoginButton';
+import Layout from '../components/layout/Layout';
+import AutoLoginButton from '../components/layout/AutoLoginButton';
 import config from '../config';
 
 export default function AutoLoginExample() {

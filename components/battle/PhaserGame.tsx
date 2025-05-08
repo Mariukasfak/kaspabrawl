@@ -82,21 +82,24 @@ class MainScene extends Phaser.Scene {
       }
       
       // Add particles with the custom texture
-      const particles = this.add.particles(0, 0, particleKey);
-      
-      const emitter = particles.createEmitter({
-        x: width / 2,
-        y: height - 100,
-        scale: { start: 0.05, end: 0 },
-        speed: { min: 50, max: 100 },
-        angle: { min: -180, max: 0 },
-        quantity: 1,
-        frequency: 1000,
-        lifespan: 2000,
-        alpha: { start: 0.5, end: 0 },
-        tint: 0x5c2b97,
-        blendMode: 'ADD'
-      });
+      // In newer versions of Phaser, the particles API is different
+      try {
+        const particles = this.add.particles(0, 0, particleKey, {
+          x: width / 2,
+          y: height - 100,
+          scale: { start: 0.05, end: 0 },
+          speed: { min: 50, max: 100 },
+          angle: { min: -180, max: 0 },
+          quantity: 1,
+          frequency: 1000,
+          lifespan: 2000,
+          alpha: { start: 0.5, end: 0 },
+          tint: 0x5c2b97,
+          blendMode: 'ADD'
+        });
+      } catch (e) {
+        console.warn('Failed to create particle effect:', e);
+      }
       
     } catch (e) {
       console.warn('Failed to add background image, using fallback');

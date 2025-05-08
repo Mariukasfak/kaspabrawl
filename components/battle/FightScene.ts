@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Fighter, FightStep } from '../utils/simulateFight';
+import { Fighter, FightStep } from '../../utils/simulateFight';
 
 // Screen positions
 const PLAYER_A_X = 200;

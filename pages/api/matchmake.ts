@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../lib/prisma';
-import { MatchmakeRequest, MatchmakeResponse } from '../../types/index';
+import { MatchmakeRequest, MatchmakeResponse } from '../../types';
 
 /**
  * API route for matchmaking 

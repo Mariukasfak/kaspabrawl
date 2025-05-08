@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../lib/prisma';
-import { FightLogListItem } from '../../types/index';
+import { FightLogListItem } from '../../types';
 
 /**
  * API route for retrieving recent fight logs

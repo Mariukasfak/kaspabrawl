@@ -1,0 +1,1 @@
+/workspaces/kaspabrawl/utils/fighterDesigns.ts

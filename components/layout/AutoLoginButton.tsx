@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import useAutoWalletAuth from '../hooks/useAutoWalletAuth';
+import useAutoWalletAuth from '../../hooks/useAutoWalletAuth';
 
 interface AutoLoginButtonProps {
   autoLoginEnabled?: boolean;

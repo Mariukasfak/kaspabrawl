@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Layout from '../components/layout/Layout';
 import Spinner from '../components/ui/Spinner';
-import { FightLogResponse } from '../types/index';
+import { FightLogResponse } from '../types';
 import Alert from '../components/ui/Alert';
 import FighterCard from '../components/fighter/FighterCard';
 import SpecialMoveCard from '../components/fighter/SpecialMoveCard';

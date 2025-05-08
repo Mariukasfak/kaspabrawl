@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import Link from 'next/link';
 import useWalletAuth from '../../hooks/useWalletAuth';
-import TokenBadge from './TokenBadge';
+import TokenBadge from '../ui/TokenBadge';
 import Alert from '../ui/Alert';
 import Spinner from '../ui/Spinner';
 

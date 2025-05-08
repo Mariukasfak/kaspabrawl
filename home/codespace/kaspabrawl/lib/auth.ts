@@ -1,0 +1,1 @@
+/workspaces/kaspabrawl/lib/auth.ts
