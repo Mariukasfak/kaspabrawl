@@ -1,1 +1,0 @@
-/workspaces/kaspabrawl/lib/prisma.ts
