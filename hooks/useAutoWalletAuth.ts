@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { autoAuthenticate, saveAuthToken } from '../lib/autoAuth';
+import { autoAuthenticate, saveAuthToken } from '../lib/autoAuth.js';
 
 export interface AutoWalletAuthState {
   address: string | null;
@@ -36,7 +36,7 @@ export default function useAutoWalletAuth() {
   
   // Auto connect function
   const autoConnect = useCallback(async () => {
-    if (!window.kasware) {
+    if (!(window as any).kasware) {
       setState(prev => ({
         ...prev,
         error: 'KasWare wallet not installed',
@@ -52,13 +52,13 @@ export default function useAutoWalletAuth() {
     
     try {
       // Request accounts
-      const accounts = await window.kasware.requestAccounts();
+      const accounts = await (window as any).kasware.requestAccounts();
       if (!accounts || accounts.length === 0) {
         throw new Error('No accounts found');
       }
       
       // Auto authenticate
-      const { token, address } = await autoAuthenticate(window.kasware);
+      const { token, address } = await autoAuthenticate((window as any).kasware);
       
       // Save token
       saveAuthToken(token, address);
