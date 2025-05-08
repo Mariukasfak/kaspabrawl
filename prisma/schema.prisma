@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  address   String   @unique
+  createdAt DateTime @default(now())
+  fightLogsA FightLog[] @relation("PlayerA")
+  fightLogsB FightLog[] @relation("PlayerB")
+  nftItems   NFTItem[]
+}
+
+model Nonce {
+  id        String   @id @default(cuid())
+  value     String   @unique
+  address   String?  // Address associated with this nonce (optional)
+  createdAt DateTime @default(now())
+  expiresAt DateTime // When this nonce expires
+  used      Boolean  @default(false) // Tracks if the nonce has been used
+}
+
+model FightLog {
+  id       String   @id @default(uuid())
+  playerA  User     @relation("PlayerA", fields: [playerAId], references: [id])
+  playerAId String
+  playerB  User     @relation("PlayerB", fields: [playerBId], references: [id])
+  playerBId String
+  log      String   // JSON as string
+  createdAt DateTime @default(now())
+}
+
+model NFTItem {
+  id          String @id @default(cuid())
+  owner       User   @relation(fields: [ownerAddress], references: [address])
+  ownerAddress String
+  metadata    String // JSON as string
+}

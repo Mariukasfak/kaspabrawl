@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #ff6b6b;
+  --secondary-color: #4ecdc4;
+  --background-color: #1a1a2e;
+  --text-color: #f7fff7;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-color);
+  background-color: var(--background-color);
+}
+
+.kaspa-button {
+  @apply bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-all duration-200;
+}
+
+.game-container {
+  @apply w-full max-w-4xl mx-auto my-4 bg-gray-800 rounded-lg overflow-hidden;
+  height: 600px;
+}
+
+.wallet-badge {
+  @apply flex items-center space-x-2 bg-gray-700 px-4 py-2 rounded-full text-sm;
+}
