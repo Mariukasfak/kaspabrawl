@@ -1,57 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
+import Link from 'next/link';
 import useWalletAuth from '../../hooks/useWalletAuth';
 import TokenBadge from '../ui/TokenBadge';
-import CustomAlert from '../ui/Alert';
-
-type HeaderAlertProps = {
-  message: string;
-  type?: 'error' | 'success' | 'warning' | 'info';
-  onDismiss?: () => void;
-};
-
-const HeaderAlert: React.FC<HeaderAlertProps> = ({ message, type = 'error', onDismiss }) => {
-  // Auto-dismiss after 5 seconds
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (onDismiss) onDismiss();
-    }, 5000);
-    
-    return () => clearTimeout(timer);
-  }, [onDismiss]);
-  
-  // Determine colors based on type
-  let bgColor = 'bg-red-900';
-  let textColor = 'text-white';
-  let borderColor = 'border-red-700';
-  
-  if (type === 'success') {
-    bgColor = 'bg-green-900';
-    borderColor = 'border-green-700';
-  } else if (type === 'warning') {
-    bgColor = 'bg-yellow-800';
-    borderColor = 'border-yellow-700';
-  } else if (type === 'info') {
-    bgColor = 'bg-blue-900';
-    borderColor = 'border-blue-700';
-  }
-  
-  return (
-    <div className={`${bgColor} ${textColor} border-b ${borderColor} text-center py-2 text-sm relative`}>
-      <div className="container mx-auto px-4 flex justify-between items-center">
-        <div className="flex-grow">{message}</div>
-        {onDismiss && (
-          <button 
-            onClick={onDismiss}
-            className="ml-4 text-lg leading-none opacity-70 hover:opacity-100 transition-opacity"
-            aria-label="Dismiss"
-          >
-            &times;
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
+import Alert from '../ui/Alert';
+import Spinner from '../ui/Spinner';
 
 const Header: React.FC = () => {
   const { 
@@ -68,10 +20,6 @@ const Header: React.FC = () => {
     brawlBalance,
     isWalletAvailable
   } = useWalletAuth();
-
-  // Hydration guard
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => { setHydrated(true); }, []);
   
   const refreshBtnRef = useRef<HTMLButtonElement>(null);
   
@@ -97,11 +45,13 @@ const Header: React.FC = () => {
     <header className="bg-gray-900 py-4 px-6 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-purple-400">Kaspa Brawl</h1>
+          <Link href="/" className="text-2xl font-bold text-purple-400 hover:text-purple-300 transition-colors">
+            Kaspa Brawl
+          </Link>
         </div>
         
         <div className="flex space-x-4 items-center">
-          {hydrated && address ? (
+          {address ? (
             <>
               <div className="flex space-x-2">
                 <TokenBadge 
@@ -142,25 +92,21 @@ const Header: React.FC = () => {
                 </button>
               </div>
             </>
-          ) : hydrated ? (
+          ) : (
             <div className="flex space-x-2">
               <button
                 onClick={connectWallet}
                 disabled={isConnecting || !isWalletAvailable}
                 className="kaspa-button relative"
               >
+                {/* Use a consistent initial state to avoid hydration issues */}
                 {isConnecting ? (
                   <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <Spinner size="sm" className="mr-2" />
                     Connecting...
                   </span>
-                ) : !isWalletAvailable ? (
-                  'KasWare Not Found'
                 ) : (
-                  'Connect Wallet'
+                  <span>{!isWalletAvailable ? 'KasWare Not Found' : 'Connect Wallet'}</span>
                 )}
               </button>
               
@@ -172,12 +118,12 @@ const Header: React.FC = () => {
                 Play as Guest
               </button>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
       
       {error && (
-        <HeaderAlert 
+        <Alert 
           message={`Error: ${error}`} 
           type="error" 
           onDismiss={() => {
@@ -187,7 +133,7 @@ const Header: React.FC = () => {
       )}
       
       {!isWalletAvailable && !isGuest && !address && (
-        <HeaderAlert
+        <Alert
           message="KasWare wallet extension not detected. Install it to connect with your Kaspa wallet."
           type="warning"
         />

@@ -1,9 +1,9 @@
 import { useRef } from 'react';
 import Link from 'next/link';
-import useWalletAuth from '../hooks/useWalletAuth';
-import TokenBadge from './TokenBadge';
-import Alert from './Alert';
-import Spinner from './Spinner';
+import useWalletAuth from '../../hooks/useWalletAuth';
+import TokenBadge from '../ui/TokenBadge';
+import Alert from '../ui/Alert';
+import Spinner from '../ui/Spinner';
 
 const Header: React.FC = () => {
   const { 
@@ -99,15 +99,14 @@ const Header: React.FC = () => {
                 disabled={isConnecting || !isWalletAvailable}
                 className="kaspa-button relative"
               >
+                {/* Use a consistent initial state to avoid hydration issues */}
                 {isConnecting ? (
                   <span className="flex items-center">
                     <Spinner size="sm" className="mr-2" />
                     Connecting...
                   </span>
-                ) : !isWalletAvailable ? (
-                  'KasWare Not Found'
                 ) : (
-                  'Connect Wallet'
+                  <span>{!isWalletAvailable ? 'KasWare Not Found' : 'Connect Wallet'}</span>
                 )}
               </button>
               
