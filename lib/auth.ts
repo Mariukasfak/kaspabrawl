@@ -138,15 +138,32 @@ export async function verifySignature(
       return false;
     }
 
-    // Simplified signature verification for development purposes
-    // In production, we would use a more robust signature verification method
-    console.log(`Accepting wallet signature for address: ${address}`);
-    
-    // Mark the nonce as used to prevent replay attacks
-    await markNonceAsUsed(message);
-    
-    // For development, we'll accept the authentication
-    return true;
+    // Proper signature verification using Kaspa libraries
+    try {
+      // Create a Kaspa message object from the nonce
+      const messageObj = kaspacore.Message(message);
+      
+      // Verify the signature against the provided public key
+      const isSignatureValid = messageObj.verify(address, signature);
+      
+      // Verify the address matches the public key
+      const derivedAddress = Address.fromPublicKey(Buffer.from(publicKey, 'hex')).toString();
+      const isAddressValid = derivedAddress === address;
+      
+      console.log(`Signature verification: ${isSignatureValid ? 'Valid' : 'Invalid'}`);
+      console.log(`Address verification: ${isAddressValid ? 'Valid' : 'Invalid'}`);
+      
+      // Mark the nonce as used to prevent replay attacks
+      if (isSignatureValid && isAddressValid) {
+        await markNonceAsUsed(message);
+        return true;
+      }
+      
+      return false;
+    } catch (verifyError) {
+      console.error('Error during signature verification:', verifyError);
+      return false;
+    }
   } catch (error) {
     console.error('Signature verification error:', error);
     return false;

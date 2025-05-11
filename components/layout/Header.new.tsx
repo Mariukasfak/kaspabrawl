@@ -1,9 +1,9 @@
 import { useRef } from 'react';
 import Link from 'next/link';
-import useWalletAuth from '../../hooks/useWalletAuth';
-import TokenBadge from '../ui/TokenBadge';
-import Alert from '../ui/Alert';
-import Spinner from '../ui/Spinner';
+import useWalletAuth from '../hooks/useWalletAuth';
+import TokenBadge from './TokenBadge';
+import Alert from './Alert';
+import Spinner from './Spinner';
 
 const Header: React.FC = () => {
   const { 
@@ -20,9 +20,6 @@ const Header: React.FC = () => {
     brawlBalance,
     isWalletAvailable
   } = useWalletAuth();
-  // Hydration guard
-  const [hydrated, setHydrated] = require('react').useState(false);
-  require('react').useEffect(() => { setHydrated(true); }, []);
   
   const refreshBtnRef = useRef<HTMLButtonElement>(null);
   
@@ -54,14 +51,7 @@ const Header: React.FC = () => {
         </div>
         
         <div className="flex space-x-4 items-center">
-          {!hydrated ? (
-            <div className="flex space-x-2">
-              <button className="kaspa-button relative" disabled>
-                <Spinner size="sm" className="mr-2" />
-                Loading...
-              </button>
-            </div>
-          ) : address ? (
+          {address ? (
             <>
               <div className="flex space-x-2">
                 <TokenBadge 
@@ -86,6 +76,7 @@ const Header: React.FC = () => {
                   </svg>
                 </button>
               </div>
+              
               <div className="flex items-center">
                 <span className="mr-2 text-sm text-gray-300">
                   {isGuest ? (
@@ -119,6 +110,7 @@ const Header: React.FC = () => {
                   'Connect Wallet'
                 )}
               </button>
+              
               <button
                 onClick={connectAsGuest}
                 disabled={isConnecting}

@@ -6,6 +6,5 @@ interface Window {
       publicKey: string;
       address: string;
     }>;
-    getBalance?: () => Promise<string>;
   };
 }
