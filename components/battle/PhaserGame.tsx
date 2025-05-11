@@ -1,63 +1,50 @@
 import { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
-import { FightStep } from '../../utils/simulateFight';
+import { FightStep, Fighter } from '../../utils/simulateFight';
+import BattleArena from './BattleArena';
 
 interface GameProps {
   walletAddress?: string | null;
   fightLog?: FightStep[];
+  fighterA?: Fighter;
+  fighterB?: Fighter;
 }
 
-// Configure Phaser game scene
+// Configure Phaser game scene - Simple entry scene that loads into BattleArena
 class MainScene extends Phaser.Scene {
   private fightSteps: FightStep[] = [];
-  private currentStepIndex: number = 0;
-  private processingStep: boolean = false;
-  private stepInterval: number = 2000; // 2 seconds between steps
-  private lastStepTime: number = 0;
-  
-  // Game objects
-  private fighter1: Phaser.GameObjects.Sprite | null = null;
-  private fighter2: Phaser.GameObjects.Sprite | null = null;
-  private healthBar1: Phaser.GameObjects.Rectangle | null = null;
-  private healthBar2: Phaser.GameObjects.Rectangle | null = null;
-  private healthText1: Phaser.GameObjects.Text | null = null;
-  private healthText2: Phaser.GameObjects.Text | null = null;
-  private actionText: Phaser.GameObjects.Text | null = null;
-  private fighterMaxHP: Record<string, number> = {};
-  private fighterCurrentHP: Record<string, number> = {};
+  private fighterA?: Fighter;
+  private fighterB?: Fighter;
   
   constructor() {
     super({ key: 'MainScene' });
   }
 
-  init(data: { fightLog?: FightStep[] }) {
+  init(data: { fightLog?: FightStep[], fighterA?: Fighter, fighterB?: Fighter }) {
     if (data.fightLog) {
       this.fightSteps = data.fightLog;
-      this.currentStepIndex = 0;
-      this.processingStep = false;
-      this.lastStepTime = 0;
+    }
+    
+    if (data.fighterA) {
+      this.fighterA = data.fighterA;
+    }
+    
+    if (data.fighterB) {
+      this.fighterB = data.fighterB;
     }
   }
 
   preload() {
-    // Load assets
-    this.load.image('fighter1', '/images/fighter-1.png');
-    this.load.image('fighter2', '/images/fighter-2.png');
-    this.load.image('background', '/images/arena-bg.png');
+    // Nothing to preload here as assets are loaded in the BattleArena scene
+    this.load.image('loading-bg', '/images/arena-bg.png');
 
-    // Create placeholder if images don't exist
-    this.load.on('filecomplete', (key: string) => {
-      console.log(`Loaded: ${key}`);
-    });
-
+    // Create placeholder if loading background doesn't exist
     this.load.on('loaderror', (file: { key: string }) => {
-      console.warn(`Failed to load: ${file.key}`);
-      // Create fallback texture for missing images
-      if (file.key === 'fighter1' || file.key === 'fighter2' || file.key === 'background') {
+      if (file.key === 'loading-bg') {
         const graphics = this.make.graphics({ x: 0, y: 0 });
-        graphics.fillStyle(file.key === 'background' ? 0x1a1a2e : 0x4ecdc4);
-        graphics.fillRect(0, 0, file.key === 'background' ? 800 : 100, file.key === 'background' ? 600 : 200);
-        graphics.generateTexture(file.key, file.key === 'background' ? 800 : 100, file.key === 'background' ? 600 : 200);
+        graphics.fillStyle(0x1a1a2e);
+        graphics.fillRect(0, 0, 800, 600);
+        graphics.generateTexture('loading-bg', 800, 600);
       }
     });
   }
