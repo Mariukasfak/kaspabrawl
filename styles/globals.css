@@ -3,20 +3,45 @@
 @tailwind utilities;
 
 :root {
-  --primary-color: #ff6b6b;
-  --secondary-color: #4ecdc4;
-  --background-color: #1a1a2e;
-  --text-color: #f7fff7;
+  /* Base KASPA theme colors */
+  --kaspa-color: #7f56d9;
+  --kaspa-light: #a78bfa;
+  --kaspa-dark: #6d28d9;
+  
+  /* Game UI colors */
+  --game-primary: #1f2937;
+  --game-secondary: #374151;
+  --game-accent: #7f56d9;
+  --game-text-light: #f9fafb;
+  --game-text-dark: #111827;
 }
 
 body {
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: var(--text-color);
-  background-color: var(--background-color);
+  color: var(--game-text-light);
+  background-color: var(--game-primary);
 }
 
-.kaspa-button {
-  @apply bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition-all duration-200;
+@layer components {
+  .kaspa-button {
+    @apply bg-kaspa hover:bg-kaspa-dark text-white font-bold py-2 px-4 rounded transition-all duration-200;
+  }
+  
+  .game-container {
+    @apply bg-game-primary text-game-text-light rounded-lg shadow-lg p-4;
+  }
+  
+  .fighter-card {
+    @apply bg-game-secondary p-4 rounded-md shadow-md flex flex-col;
+  }
+  
+  .stat-bar {
+    @apply h-2 bg-gray-700 rounded-full overflow-hidden;
+  }
+  
+  .stat-bar-fill {
+    @apply h-full bg-kaspa rounded-full;
+  }
 }
 
 .game-container {
