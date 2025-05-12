@@ -7,9 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "test:auth": "node scripts/test-auth.js",
-    "test:auto": "NODE_ENV=test node scripts/test-auth.js"
+    "test:auto": "NODE_ENV=test node scripts/test-auth.js",
+    "generate:sprites": "node scripts/generateSprites.js"
   },
   "keywords": [
     "kaspa",
@@ -44,9 +46,13 @@
   },
   "devDependencies": {
     "@babel/core": "^7.21.4",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.15.15",
     "babel-loader": "^9.1.2",
+    "canvas": "^3.1.0",
+    "jest": "^29.7.0",
     "postcss-nested": "^6.0.1",
+    "ts-jest": "^29.3.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }

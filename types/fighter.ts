@@ -1,6 +1,14 @@
 import { Stats, EquipmentLoadout, calculateTotalStats, EquipmentSlot, Equipment } from './equipment';
+import { SpecialAbility } from './characterAbilities';
 
 export type FighterClass = 'Warrior' | 'Rogue' | 'Mage' | 'Ranger' | 'Cleric';
+
+// Character progression-related types for fighter integration
+export interface FighterProgression {
+  unallocatedStatPoints: number;
+  characterAbilities: SpecialAbility[];
+  lastLevelUpTime?: Date;
+}
 
 /**
  * Character level ranges
@@ -84,6 +92,9 @@ export interface Fighter {
   wins: number;
   losses: number;
   draws: number;
+
+  // Character progression
+  progression: FighterProgression;
 }
 
 /**

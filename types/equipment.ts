@@ -7,6 +7,7 @@ export interface Stats {
   strength: number;     // Affects damage
   agility: number;      // Affects speed and dodge chance
   vitality: number;     // Affects health points
+  intelligence: number; // Affects magical abilities and mana
   defense: number;      // Reduces damage taken
   critChance: number;   // Chance to land critical hits
   critDamage: number;   // Multiplier for critical hit damage

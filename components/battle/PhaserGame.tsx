@@ -416,6 +416,77 @@ class MainScene extends Phaser.Scene {
           });
         }
       }
+    } else if (step.type === 'levelup') {
+      // Level up animation
+      if (this.actionText) {
+        this.actionText.setText(step.text);
+        // Make the text more prominent with special color
+        this.actionText.setColor('#ffff00'); // Yellow color
+        this.tweens.add({
+          targets: this.actionText,
+          scale: 1.5,
+          duration: 500,
+          yoyo: true,
+          repeat: 1
+        });
+        
+        // Add special particles for level up
+        const isFirstFighterLevelingUp = step.attacker === this.fightSteps[0].attacker;
+        const levelingUpFighter = isFirstFighterLevelingUp ? this.fighter1 : this.fighter2;
+        
+        if (levelingUpFighter) {
+          // Create gold star particles around the fighter
+          const particles = this.add.particles(0, 0, 'particle3', {
+            x: levelingUpFighter.x,
+            y: levelingUpFighter.y - 50,
+            speed: { min: 50, max: 150 },
+            scale: { start: 0.5, end: 0 },
+            quantity: 3,
+            frequency: 50,
+            lifespan: 2000,
+            blendMode: 'ADD',
+            tint: 0xffff00,
+            emitting: true
+          });
+          
+          // Make the fighter glow
+          this.tweens.add({
+            targets: levelingUpFighter,
+            alpha: 0.8,
+            duration: 200,
+            yoyo: true,
+            repeat: 5
+          });
+          
+          // Show level up text
+          const levelText = this.add.text(
+            levelingUpFighter.x, 
+            levelingUpFighter.y - 100,
+            'LEVEL UP!',
+            { 
+              fontSize: '28px',
+              fontStyle: 'bold',
+              color: '#ffff00',
+              stroke: '#000000',
+              strokeThickness: 4
+            }
+          ).setOrigin(0.5);
+          
+          // Animate level up text
+          this.tweens.add({
+            targets: levelText,
+            y: levelText.y - 50,
+            alpha: 0,
+            duration: 2000,
+            ease: 'Power2',
+            onComplete: () => {
+              levelText.destroy();
+              particles.destroy();
+              this.actionText?.setColor('#ffffff'); // Reset text color
+            }
+          });
+        }
+      }
     } else if (step.type === 'end') {
       // End of battle animation
       if (this.actionText) {
@@ -625,6 +696,54 @@ class MainScene extends Phaser.Scene {
               this.processNextStep();
             });
           }
+        });
+      }
+    } else if (step.type === 'special' && step.progression?.xpGained) {
+      // XP Gain animation
+      if (this.actionText) {
+        this.actionText.setText(step.text);
+      }
+      
+      const isFirstFighterGaining = step.attacker === this.fightSteps[0].attacker;
+      const xpGainingFighter = isFirstFighterGaining ? this.fighter1 : this.fighter2;
+      
+      if (xpGainingFighter) {
+        // Show XP gained text
+        const xpText = this.add.text(
+          xpGainingFighter.x, 
+          xpGainingFighter.y - 80,
+          `+${step.progression.xpGained} XP`,
+          { 
+            fontSize: '24px',
+            fontStyle: 'bold',
+            color: '#00ffff', // Cyan
+            stroke: '#000000',
+            strokeThickness: 3
+          }
+        ).setOrigin(0.5);
+        
+        // Animate XP text
+        this.tweens.add({
+          targets: xpText,
+          y: xpText.y - 40,
+          alpha: 0,
+          duration: 1500,
+          ease: 'Power1',
+          onComplete: () => xpText.destroy()
+        });
+        
+        // Continue to next step after animation
+        this.time.delayedCall(1700, () => {
+          this.currentStepIndex++;
+          this.processingStep = false;
+          this.processNextStep();
+        });
+      } else {
+        // Fall back in case fighter not found
+        this.time.delayedCall(1200, () => {
+          this.currentStepIndex++;
+          this.processingStep = false;
+          this.processNextStep();
         });
       }
     } else {

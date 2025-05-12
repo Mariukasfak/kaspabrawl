@@ -26,6 +26,20 @@ export interface FightRequest {
 export interface FightResponse {
   fightLogId: string;
   log: FightStep[];
+  progression?: {
+    winner: {
+      xpGained: number;
+      leveledUp?: boolean;
+      newLevel?: number;
+      unlockedAbilities?: any[];
+    };
+    loser: {
+      xpGained: number;
+      leveledUp?: boolean;
+      newLevel?: number;
+      unlockedAbilities?: any[];
+    };
+  };
 }
 
 // FightLog interfaces

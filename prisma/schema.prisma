@@ -17,6 +17,7 @@ model User {
   fightLogsA FightLog[] @relation("PlayerA")
   fightLogsB FightLog[] @relation("PlayerB")
   nftItems   NFTItem[]
+  fighterData FighterData?
 }
 
 model Nonce {
@@ -35,6 +36,7 @@ model FightLog {
   playerB  User     @relation("PlayerB", fields: [playerBId], references: [id])
   playerBId String
   log      String   // JSON as string
+  progressionData String?  // JSON string for progression data
   createdAt DateTime @default(now())
 }
 
@@ -43,4 +45,21 @@ model NFTItem {
   owner       User   @relation(fields: [ownerAddress], references: [address])
   ownerAddress String
   metadata    String // JSON as string
+}
+
+model FighterData {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @unique
+  level     Int      @default(1)
+  experience Int      @default(0)
+  class     String?
+  unallocatedStatPoints Int @default(0)
+  strength  Int      @default(5)
+  agility   Int      @default(5)
+  intelligence Int   @default(5)
+  abilities String?  // JSON string for abilities
+  lastLevelUpTime DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

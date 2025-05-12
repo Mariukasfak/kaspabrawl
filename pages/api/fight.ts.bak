@@ -1,0 +1,152 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
+import prisma from '../../lib/prisma';
+import { FightRequest, FightResponse } from '../../types';
+import { simulateFight } from '../../utils/simulateFight';
+import { createCharacterFromFighter, applyCharacterStatsToFighter } from '../../utils/characterProgressionIntegration';
+
+/**
+ * API route for executing a fight between two players
+ */
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<FightResponse | { error: string }>
+) {
+  // Only accept POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    // Parse request body
+    const { playerA, playerB } = req.body as FightRequest;
+
+    if (!playerA || !playerB) {
+      return res.status(400).json({ error: 'Both player IDs are required' });
+    }
+
+    // Check if players exist
+    let playerAUser = await prisma.user.findFirst({
+      where: { address: playerA }
+    });
+    
+    let playerBUser = await prisma.user.findFirst({
+      where: { address: playerB }
+    });
+
+    // Create users if they don't exist (for guests or new addresses)
+    if (!playerAUser) {
+      playerAUser = await prisma.user.create({
+        data: {
+          address: playerA
+        }
+      });
+    }
+
+    if (!playerBUser) {
+      playerBUser = await prisma.user.create({
+        data: {
+          address: playerB
+        }
+      });
+    }
+
+    // Simulate the fight
+    const fightResult = await simulateFight(playerAUser.id, playerBUser.id);
+    
+    // Process progression if available
+    if (fightResult.progression) {
+      // Get fighters with progression data
+      const fighterAData = await prisma.fighterData.findUnique({
+        where: { userId: playerAUser.id }
+      });
+      
+      const fighterBData = await prisma.fighterData.findUnique({
+        where: { userId: playerBUser.id }
+      });
+      
+      // Handle player A progression
+      const isPlayerAWinner = fightResult.winner === playerAUser.id;
+      const playerAProgressionData = isPlayerAWinner ? fightResult.progression.winner : fightResult.progression.loser;
+      
+      if (fighterAData) {
+        // Update existing fighter data
+        await prisma.fighterData.update({
+          where: { userId: playerAUser.id },
+          data: {
+            experience: { increment: playerAProgressionData.xpGained || 0 }
+          }
+        });
+        
+        // Handle level up if needed
+        if (playerAProgressionData.leveledUp) {
+          await prisma.fighterData.update({
+            where: { userId: playerAUser.id },
+            data: {
+              level: playerAProgressionData.newLevel || (fighterAData.level + 1),
+              unallocatedStatPoints: { increment: 3 }, // Award 3 stat points per level
+              lastLevelUpTime: new Date()
+            }
+          });
+        }
+      } else {
+        // Create new fighter data for player A
+        await prisma.fighterData.create({
+          data: {
+            userId: playerAUser.id,
+            experience: playerAProgressionData.xpGained || 0,
+            level: playerAProgressionData.leveledUp ? (playerAProgressionData.newLevel || 2) : 1,
+            unallocatedStatPoints: playerAProgressionData.leveledUp ? 3 : 0,
+            lastLevelUpTime: playerAProgressionData.leveledUp ? new Date() : null
+          }
+        });
+      }
+      
+      if (fighterB) {
+        // Update loser progression
+        const isPlayerBWinner = fightResult.winner === playerBUser.id;
+        const progressionData = isPlayerBWinner ? fightResult.progression.winner : fightResult.progression.loser;
+        
+        // Apply experience gain
+        if (progressionData.xpGained) {
+          await prisma.fighter.update({
+            where: { id: fighterB.id },
+            data: {
+              experience: { increment: progressionData.xpGained }
+            }
+          });
+          
+          // Handle level up if needed
+          if (progressionData.leveledUp) {
+            await prisma.fighter.update({
+              where: { id: fighterB.id },
+              data: {
+                level: progressionData.newLevel,
+                unallocatedStatPoints: { increment: 3 } // Award 3 stat points per level
+              }
+            });
+          }
+        }
+      }
+    }
+
+    // Create a new fight log in the database
+    const fightLog = await prisma.fightLog.create({
+      data: {
+        playerA: { connect: { id: playerAUser.id } },
+        playerB: { connect: { id: playerBUser.id } },
+        log: JSON.stringify(fightResult.steps),
+        progressionData: fightResult.progression ? JSON.stringify(fightResult.progression) : null
+      }
+    });
+
+    // Return the fight result
+    return res.status(200).json({
+      fightLogId: fightLog.id,
+      log: fightResult.steps,
+      progression: fightResult.progression
+    });
+  } catch (error) {
+    console.error('Error in fight execution:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}

@@ -9,8 +9,12 @@ import Spinner from '../components/ui/Spinner';
 import MatchmakingOverlay from '../components/ui/MatchmakingOverlay';
 import FighterCard from '../components/fighter/FighterCard';
 import FighterProfile from '../components/fighter/FighterProfile';
+import LevelUpModal from '../components/fighter/LevelUpModal';
 import { FightLogListItem, MatchmakeResponse, FightResponse } from '../types';
 import { getFighterDesignByAddress } from '../utils/fighterDesigns';
+import { ICharacter, createCharacter } from '../types/characterProgression';
+import { Fighter } from '../types/fighter';
+import { createCharacterFromFighter, updateFighterProgression } from '../utils/characterProgressionIntegration';
 
 // Dynamically load the Phaser component to prevent SSR issues
 const PhaserGame = dynamic(() => import('../components/battle/PhaserGame'), {
@@ -27,9 +31,62 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currentOpponent, setCurrentOpponent] = useState<string | null>(null);
   const [currentFightLog, setCurrentFightLog] = useState<FightResponse | null>(null);
+  const [fighter, setFighter] = useState<Fighter | null>(null);
+  // Level up modal state
+  const [showLevelUpModal, setShowLevelUpModal] = useState<boolean>(false);
+  const [levelUpCharacter, setLevelUpCharacter] = useState<ICharacter | null>(null);
   // Hydration guard
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
+  
+  // Initialize fighter with the address
+  useEffect(() => {
+    if (address) {
+      const fighterDesign = getFighterDesignByAddress(address);
+      setFighter({
+        id: address,
+        address: address,
+        name: fighterDesign.name || 'Fighter',
+        level: 1,
+        experience: 0,
+        baseStats: {
+          strength: 10,
+          agility: 8,
+          vitality: 9,
+          intelligence: 7,
+          defense: 7,
+          critChance: 0.1,
+          critDamage: 1.5,
+          blockRate: 0.1,
+          magicFind: 1.0
+        },
+        equipment: {
+          head: null,
+          chest: null,
+          legs: null,
+          weapon: null,
+          offhand: null,
+          accessory1: null,
+          accessory2: null
+        },
+        currentHp: 100,
+        maxHp: 100,
+        energy: 100,
+        maxEnergy: 100,
+        skills: [],
+        class: 'Warrior',
+        statusEffects: [],
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        progression: {
+          unallocatedStatPoints: 0,
+          characterAbilities: [],
+          lastLevelUpTime: undefined
+        }
+      });
+    }
+  }, [address]);
 
   // Load recent battles
   const loadRecentBattles = async () => {
@@ -78,9 +135,9 @@ export default function Home() {
             <Spinner className="mx-auto mb-2" />
             <p className="text-gray-400">Loading...</p>
           </div>
-        ) : address ? (
+        ) : address && fighter ? (
           <FighterProfile
-            address={address}
+            fighter={fighter}
             isGuest={isGuest}
             isLoading={isLoading}
             onFindOpponent={async () => {
@@ -120,8 +177,51 @@ export default function Home() {
                 }
                 const fightData: FightResponse = await fightResponse.json();
                 setCurrentFightLog(fightData);
-                // Step 3: Move to the arena page
-                router.push(`/arena?fightLogId=${fightData.fightLogId}`);
+                
+                // Check for level up in progression data
+                if (fightData.progression) {
+                  const isPlayerAWinner = true; // assume we are player A for this demo
+                  const progressionData = isPlayerAWinner ? fightData.progression.winner : fightData.progression.loser;
+                  
+                  if (progressionData.leveledUp && fighter) {
+                    // Create a character object from fighter for level up modal
+                    let character = createCharacterFromFighter(fighter);
+                    
+                    if (!character) {
+                      // If conversion fails, create a default character
+                      character = createCharacter(
+                        fighter.name || 'Fighter',
+                        fighter.class === 'Mage' ? 'Mage' : 
+                        fighter.class === 'Ranger' || fighter.class === 'Rogue' ? 'Ranger' : 'Fighter'
+                      );
+                    }
+                    
+                    // Update to new level from fight results
+                    character.level = progressionData.newLevel || (fighter.level + 1);
+                    // Add 3 free stat points for level up
+                    character.freePoints = (fighter.progression?.unallocatedStatPoints || 0) + 3;
+                    
+                    // Update fighter with new level
+                    setFighter({
+                      ...fighter,
+                      level: character.level,
+                      progression: {
+                        ...fighter.progression,
+                        unallocatedStatPoints: character.freePoints
+                      }
+                    });
+                    
+                    // Show level up modal
+                    setLevelUpCharacter(character);
+                    setShowLevelUpModal(true);
+                  }
+                }
+                
+                // Step 3: Move to the arena page if not showing level up modal
+                if (!showLevelUpModal) {
+                  router.push(`/arena?fightLogId=${fightData.fightLogId}`);
+                }
+                
                 // Load recent battles after a successful fight
                 loadRecentBattles();
               } catch (err) {
@@ -187,6 +287,42 @@ export default function Home() {
             onCancel={() => {
               setIsLoading(false);
               setGameState('lobby');
+            }}
+          />
+        )}
+        
+        {/* Level Up Modal */}
+        {showLevelUpModal && levelUpCharacter && (
+          <LevelUpModal 
+            character={levelUpCharacter}
+            isOpen={showLevelUpModal}
+            onClose={() => setShowLevelUpModal(false)}
+            onSave={async (updatedCharacter) => {
+              // Save character changes
+              setLevelUpCharacter(updatedCharacter);
+              
+              // Update fighter with new progression data
+              if (fighter) {
+                try {
+                  // Use updateFighterProgression to update the fighter and persist changes
+                  const updatedFighter = await updateFighterProgression(fighter, updatedCharacter);
+                  setFighter(updatedFighter);
+                  
+                  // Show success message
+                  setError(null);
+                } catch (err) {
+                  console.error("Error updating fighter progression:", err);
+                  setError("Failed to update character progression. Please try again.");
+                }
+              }
+              
+              // Close modal
+              setShowLevelUpModal(false);
+              
+              // Navigate to arena if a fight just completed
+              if (currentFightLog) {
+                router.push(`/arena?fightLogId=${currentFightLog.fightLogId}`);
+              }
             }}
           />
         )}
