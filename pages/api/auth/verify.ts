@@ -42,7 +42,48 @@ export default async function handler(
     // Log the entire request body for debugging
     console.log('Request body (partial):', JSON.stringify(req.body).slice(0, 200));
     
-    const { nonce, signature, publicKey, address } = req.body as VerifyRequest;
+    // Extract request data with full logging
+    const rawBody = req.body;
+    console.log('Raw request body:', typeof rawBody, rawBody);
+    
+    // Handle case when signature might be in a different format or null
+    let { nonce, signature, publicKey, address } = rawBody as VerifyRequest;
+    
+    // More flexible signature extraction
+    if (!signature || signature === null) {
+      // Try to get signature from other fields that might contain it
+      if (rawBody.sig) signature = rawBody.sig;
+      else if (rawBody.signatureHex) signature = rawBody.signatureHex;
+      else if (rawBody.signatureData) signature = rawBody.signatureData;
+      else if (typeof rawBody.signature === 'object' && rawBody.signature?.data) {
+        signature = rawBody.signature.data;
+      }
+    }
+    
+    // More flexible address extraction
+    if (!address) {
+      if (rawBody.walletAddress) address = rawBody.walletAddress;
+      else if (rawBody.addr) address = rawBody.addr;
+      else if (typeof rawBody.signature === 'object' && rawBody.signature?.address) {
+        address = rawBody.signature.address;
+      }
+    }
+    
+    // More flexible publicKey extraction
+    if (!publicKey) {
+      if (rawBody.pubkey) publicKey = rawBody.pubkey;
+      else if (rawBody.pubKey) publicKey = rawBody.pubKey;
+      else if (typeof rawBody.signature === 'object' && rawBody.signature?.publicKey) {
+        publicKey = rawBody.signature.publicKey;
+      }
+    }
+    
+    // Log received values
+    console.log('Extracted values:');
+    console.log('- nonce:', nonce ? `${nonce.slice(0, 10)}...` : 'undefined');
+    console.log('- signature:', signature ? `${signature.slice(0, 10)}...` : 'undefined');
+    console.log('- publicKey:', publicKey ? `${publicKey.slice(0, 10)}...` : 'undefined');
+    console.log('- address:', address || 'undefined');
     
     // Validate inputs with detailed logging
     if (!nonce) {
@@ -53,13 +94,15 @@ export default async function handler(
       console.error('Missing signature in request');
       return res.status(400).json({ error: 'Missing signature' });
     }
-    if (!publicKey) {
-      console.error('Missing publicKey in request');
-      return res.status(400).json({ error: 'Missing publicKey' });
-    }
     if (!address) {
       console.error('Missing address in request');
       return res.status(400).json({ error: 'Missing address' });
+    }
+    
+    // Allow missing publicKey in development mode
+    if (!publicKey && process.env.NODE_ENV === 'production') {
+      console.error('Missing publicKey in request');
+      return res.status(400).json({ error: 'Missing publicKey' });
     }
     
     // Log validation success
@@ -80,7 +123,7 @@ export default async function handler(
     console.log(`Nonce: ${nonce.slice(0, 10)}...`);
     
     // Verify the signature
-    const isValid = await verifySignature(nonce, signature, publicKey, address);
+    const isValid = await verifySignature(nonce, signature, publicKey || '', address);
     
     if (!isValid) {
       console.error('Signature verification failed');

@@ -46,6 +46,16 @@ export default function EnhancedWalletTestPage() {
     addLog('Attempting to connect wallet...');
     
     try {
+      // Check environment and log it
+      addLog(`Current environment: ${process.env.NODE_ENV || 'unknown'}`);
+      addLog(`Using wallet type: ${walletType || 'none'}`);
+
+      // Log wallet detection
+      if (typeof window !== 'undefined') {
+        addLog(`KaspaWallet extension detected: ${Boolean(window['kaspaWallet'])}`);
+        addLog(`Kasware extension detected: ${Boolean(window['kasware'])}`);
+      }
+      
       const result = await connect();
       
       if (result) {
@@ -263,7 +273,7 @@ export default function EnhancedWalletTestPage() {
                 </div>
               </div>
               
-              <div className="flex space-x-4">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={async () => {
                     try {
@@ -289,6 +299,65 @@ export default function EnhancedWalletTestPage() {
                   className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded"
                 >
                   Clear Local Storage
+                </button>
+                
+                <button
+                  onClick={async () => {
+                    try {
+                      // Try to connect wallet first if not already connected
+                      if (!address && !isAuthenticated) {
+                        await connect();
+                        // Need to wait a moment for the connection to complete
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                      }
+                      
+                      // Only proceed if we have an address
+                      if (!address) {
+                        addLog('No wallet connected. Connect wallet first.');
+                        return;
+                      }
+                      
+                      // Request nonce
+                      const nonceResponse = await fetch(`/api/auth/nonce?address=${encodeURIComponent(address)}`);
+                      if (!nonceResponse.ok) {
+                        throw new Error('Failed to get nonce from server');
+                      }
+                      
+                      const { nonce } = await nonceResponse.json();
+                      addLog(`Got nonce: ${nonce.substring(0, 10)}...`);
+                      
+                      // Test signature
+                      addLog('Testing signature process...');
+                      if (wallet.type === 'kasware' && wallet.api) {
+                        // @ts-ignore
+                        const signResult = await wallet.api.signMessage(nonce);
+                        
+                        // Send the signature to our debug endpoint
+                        const debugResponse = await fetch('/api/debug/kasware-signature-debug', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            signature: signResult.signature,
+                            publicKey: signResult.publicKey,
+                            address: address,
+                            nonce: nonce
+                          })
+                        });
+                        
+                        const analysisResult = await debugResponse.json();
+                        setDebugInfo(analysisResult);
+                        addLog('Signature analysis complete');
+                      } else {
+                        addLog('Kasware wallet not detected');
+                      }
+                    } catch (error) {
+                      addLog(`Error analyzing signature: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                      console.error('Signature analysis error:', error);
+                    }
+                  }}
+                  className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded"
+                >
+                  Analyze Wallet Signature
                 </button>
               </div>
             </>

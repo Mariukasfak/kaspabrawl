@@ -106,7 +106,7 @@ const Header: React.FC = () => {
                     Connecting...
                   </span>
                 ) : (
-                  <span>{!isWalletAvailable ? 'KasWare Not Found' : 'Connect Wallet'}</span>
+                  <span>Connect Wallet</span>
                 )}
               </button>
               

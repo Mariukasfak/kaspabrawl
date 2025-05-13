@@ -12,11 +12,9 @@ export type KaspaWalletApi = {
 
 export type KaswareApi = {
   requestAccounts: () => Promise<string[]>;
-  signMessage: (message: string) => Promise<{ 
-    signature: string;
-    publicKey: string;
-    address: string;
-  }>;
+  signMessage: (message: string, type?: 'ecdsa' | 'bip322-simple') => Promise<string>;
+  getPublicKey: () => Promise<string>;
+  getBalance?: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
 };
 
 export type DetectedWallet = {
@@ -115,10 +113,59 @@ export async function signWithWallet(
       }
       
       const { signature } = await kaspaWalletApi.signMessage(message);
-      return { signature, address };
+      
+      // Validate signature
+      if (!signature || typeof signature !== 'string' || signature.length < 10) {
+        console.error('Invalid signature received from KaspaWallet', signature);
+        return null;
+      }
+      
+      console.log(`KaspaWallet signature received (${signature.length} chars): ${signature.substring(0, 15)}...`);
+      return { signature, address }; // Use the provided address
     } else if (wallet.type === 'kasware') {
-      const result = await (wallet.api as KaswareApi).signMessage(message);
-      return result;
+      try {
+        console.log('Requesting signature from Kasware wallet...');
+        console.log('Message to sign:', message.substring(0, 20) + (message.length > 20 ? '...' : ''));
+        
+        // According to KasWare docs, signMessage returns a string
+        const signature = await (wallet.api as KaswareApi).signMessage(message);
+        
+        // Enhanced validation for signature
+        if (!signature) {
+          console.error('Wallet returned empty signature');
+          return null;
+        }
+        
+        // Get the public key separately
+        console.log('Requesting public key from Kasware wallet...');
+        const publicKey = await (wallet.api as KaswareApi).getPublicKey();
+        
+        // Log the raw result for debugging
+        console.log('Signature received:', signature ? `${signature.substring(0, 15)}... (${signature.length} chars)` : 'EMPTY');
+        console.log('Public key received:', publicKey ? `${publicKey.substring(0, 15)}... (${publicKey.length} chars)` : 'EMPTY');
+        
+        // Create a validated result object with the signature and public key
+        const validatedResult = {
+          signature: signature || '',
+          publicKey: publicKey || '',
+          address: address // Use the address that was passed in
+        };
+        
+        // Log the result for debugging
+        console.log('Processed signature:', validatedResult.signature ? 
+          `${validatedResult.signature.substring(0, 15)}... (${validatedResult.signature.length} chars)` : 'Empty');
+        
+        // Make absolutely sure we have a signature
+        if (!validatedResult.signature || typeof validatedResult.signature !== 'string' || validatedResult.signature.length < 10) {
+          console.error('Empty or invalid signature received from wallet');
+          return null;
+        }
+        
+        return validatedResult;
+      } catch (walletError) {
+        console.error('Error from wallet while signing:', walletError);
+        return null;
+      }
     }
     return null;
   } catch (error) {

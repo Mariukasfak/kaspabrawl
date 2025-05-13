@@ -31,12 +31,9 @@ declare global {
   interface Window {
     kasware?: {
       requestAccounts: () => Promise<string[]>;
-      signMessage: (message: string) => Promise<{
-        signature: string;
-        publicKey: string;
-        address: string;
-      }>;
-      getBalance?: () => Promise<string>;
+      signMessage: (message: string, type?: 'ecdsa' | 'bip322-simple') => Promise<string>;
+      getPublicKey: () => Promise<string>;
+      getBalance?: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
     };
   }
 }
@@ -276,25 +273,33 @@ export default function useWalletAuth() {
       if (!window.kasware) {
         throw new Error('Kasware wallet not found. Please install the extension first.');
       }
-      const signResult = await window.kasware.signMessage(nonce);
+      
+      // Per KasWare docs, signMessage returns the signature as a string
+      const signature = await window.kasware.signMessage(nonce);
       console.log('Received signature from wallet');
+      
+      // Get the public key separately
+      console.log('Requesting public key from wallet');
+      const publicKey = await window.kasware.getPublicKey();
+      console.log('Received public key from wallet');
       
       // Verify with the server
       console.log('Sending verification to server');
       
-      // Prepare request body with more detailed logging
+      // Prepare request body with correct data types
+      // Use the address we got from requestAccounts()
       const requestBody = {
         nonce,
-        signature: signResult.signature,
-        publicKey: signResult.publicKey,
-        address: signResult.address,
+        signature,
+        publicKey,
+        address // Using the address from requestAccounts
       };
       
       console.log('Request body:', {
         nonce: nonce.substring(0, 10) + '...',
-        signature: (signResult.signature || '').substring(0, 10) + '...',
-        publicKey: (signResult.publicKey || '').substring(0, 10) + '...',
-        address: signResult.address
+        signature: signature ? signature.substring(0, 10) + '...' : 'Not provided',
+        publicKey: publicKey ? publicKey.substring(0, 10) + '...' : 'Not provided',
+        address: address // Log the actual address being used
       });
       
       const verifyResponse = await fetch('/api/auth/verify', {
@@ -312,6 +317,15 @@ export default function useWalletAuth() {
           const errorData = await verifyResponse.json();
           errorMessage = errorData.error || errorMessage;
           console.error('Verification error details:', errorData);
+          
+          // Add more detailed diagnostics
+          console.error('Verification failed with status:', verifyResponse.status);
+          console.error('Request body that was sent:', {
+            nonce: nonce ? nonce.substring(0, 10) + '...' : 'missing',
+            signature: signResult.signature ? signResult.signature.substring(0, 10) + '...' : 'missing',
+            publicKey: signResult.publicKey ? signResult.publicKey.substring(0, 10) + '...' : 'missing',
+            address: address || 'missing'
+          });
         } catch (jsonError) {
           console.error('Error parsing verification response:', jsonError);
           console.error('Response status:', verifyResponse.status);

@@ -102,17 +102,28 @@ export function useEnhancedWalletAuth(): UseEnhancedWalletAuthResult {
       
       console.log('Message signed successfully');
       
+      // Debug log the signature object
+      console.log('Signature data:', {
+        signature: signResult.signature ? signResult.signature.substring(0, 15) + '...' : 'NULL',
+        publicKey: signResult.publicKey ? signResult.publicKey.substring(0, 15) + '...' : 'Not provided',
+        address: signResult.address || walletAddress
+      });
+      
       // Verify with server
       console.log('Verifying signature with server...');
+      const requestBody = {
+        nonce,
+        signature: signResult.signature,
+        publicKey: signResult.publicKey || '',
+        address: walletAddress
+      };
+      
+      console.log('Sending verify request with data:', JSON.stringify(requestBody).slice(0, 100) + '...');
+      
       const verifyResponse = await fetch('/api/auth/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nonce,
-          signature: signResult.signature,
-          publicKey: signResult.publicKey || '',
-          address: walletAddress
-        })
+        body: JSON.stringify(requestBody)
       });
       
       if (!verifyResponse.ok) {
