@@ -26,17 +26,7 @@ const formatData = (data: any) => {
   }
 };
 
-// Resolve Kasware type safety issues
-declare global {
-  interface Window {
-    kasware?: {
-      requestAccounts: () => Promise<string[]>;
-      signMessage: (message: string, type?: 'ecdsa' | 'bip322-simple') => Promise<string>;
-      getPublicKey: () => Promise<string>;
-      getBalance?: () => Promise<{ confirmed: number; unconfirmed: number; total: number }>;
-    };
-  }
-}
+// Using the Kasware type definition from types/kasware.d.ts
 
 export default function useWalletAuth() {
   const [state, setState] = useState<WalletAuthState>({
@@ -84,7 +74,8 @@ export default function useWalletAuth() {
       if (window.kasware?.getBalance) {
         console.log(`Fetching Kaspa balance for ${address}`);
         try {
-          return await window.kasware.getBalance();
+          const balance = await window.kasware.getBalance();
+          return balance.total.toString();
         } catch (err) {
           console.error('Error getting balance from wallet:', err);
           return '1000.00'; // Fallback value if API call fails
@@ -322,8 +313,8 @@ export default function useWalletAuth() {
           console.error('Verification failed with status:', verifyResponse.status);
           console.error('Request body that was sent:', {
             nonce: nonce ? nonce.substring(0, 10) + '...' : 'missing',
-            signature: signResult.signature ? signResult.signature.substring(0, 10) + '...' : 'missing',
-            publicKey: signResult.publicKey ? signResult.publicKey.substring(0, 10) + '...' : 'missing',
+            signature: signature ? signature.substring(0, 10) + '...' : 'missing',
+            publicKey: publicKey ? publicKey.substring(0, 10) + '...' : 'missing',
             address: address || 'missing'
           });
         } catch (jsonError) {

@@ -150,6 +150,11 @@ function HomeContent() {
     saveFighterData();
   }, [fighter, isAuthenticated, isGuest, walletAddress]);
 
+  // Load recent battles on initial page load - Moving this hook before any conditional returns
+  useEffect(() => {
+    loadRecentBattles();
+  }, []);
+
   // Handle profile data updating when stats/progression change
   const updateFighterData = async (updatedFighter: Fighter) => {
     try {
@@ -243,11 +248,6 @@ function HomeContent() {
       </Layout>
     );
   }
-
-  // Load recent battles on initial page load
-  useEffect(() => {
-    loadRecentBattles();
-  }, []);
   
   return (
     <Layout>
