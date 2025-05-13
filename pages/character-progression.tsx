@@ -23,20 +23,27 @@ function createMockFighter(fighterClass: FighterClass, level: number = 1): Fight
       intelligence: 5 + level,
       vitality: 10 + level,
       critChance: 5,
-      defense: 5
+      defense: 5,
+      critDamage: 150, // Critical hit damage percentage (150%)
+      blockRate: 10,   // 10% chance to block
+      magicFind: 0     // Base magic find
     },
     currentHp: 100 + level * 10,
     maxHp: 100 + level * 10,
     energy: 100,
     maxEnergy: 100,
     equipment: {
-      head: null,
-      chest: null,
-      legs: null,
-      weapon: null
+      head: undefined,
+      chest: undefined,
+      legs: undefined,
+      weapon: undefined
     },
     skills: [],
     statusEffects: [],
+    progression: { 
+      unallocatedStatPoints: 0,
+      characterAbilities: []
+    },
     wins: 0,
     losses: 0,
     draws: 0
@@ -48,7 +55,7 @@ function createMockFighter(fighterClass: FighterClass, level: number = 1): Fight
  */
 export default function CharacterProgressionDemo() {
   // Create mock fighters for demo
-  const [fighterClass, setFighterClass] = useState<FighterClass>('Warrior');
+  const [fighterClass, setFighterClass] = useState<FighterClass>('fighter');
   
   // Create initial fighter and progression
   const initialFighter = createMockFighter(fighterClass);
@@ -88,7 +95,7 @@ export default function CharacterProgressionDemo() {
         <div className="mb-8 bg-gray-800 p-4 rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Select Character Class</h2>
           <div className="flex flex-wrap gap-3">
-            {(['Warrior', 'Mage', 'Ranger'] as FighterClass[]).map((cls) => (
+            {(['fighter', 'ranged', 'mage'] as FighterClass[]).map((cls) => (
               <button
                 key={cls}
                 onClick={() => handleChangeClass(cls)}
@@ -98,7 +105,7 @@ export default function CharacterProgressionDemo() {
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
-                {cls}
+                {cls === 'fighter' ? 'Fighter' : cls === 'ranged' ? 'Ranged (Archer)' : 'Mage'}
               </button>
             ))}
           </div>

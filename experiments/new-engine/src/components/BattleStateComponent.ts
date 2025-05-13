@@ -50,6 +50,9 @@ export class BattleStateComponent implements Component {
   public currentHealth: number;
   public maxHealth: number;
   
+  // Indicates if this battle has been processed by the blockchain system
+  public blockchainProcessed: boolean = false;
+  
   // Current and maximum energy during the battle
   public currentEnergy: number;
   public maxEnergy: number;

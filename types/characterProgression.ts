@@ -87,13 +87,18 @@ abstract class BaseCharacter implements ICharacter {
    */
   gainXp(amount: number): boolean {
     this.experience += amount;
+    let leveledUp = false;
     
-    if (this.experience >= this.experienceToNextLevel) {
+    // Handle multiple level ups in a single XP gain
+    while (this.experience >= this.experienceToNextLevel) {
+      const excessXp = this.experience - this.experienceToNextLevel;
+      this.experience = 0; // Reset XP for the new level
       this.levelUp();
-      return true;
+      this.experience = excessXp; // Apply excess XP to the new level
+      leveledUp = true;
     }
     
-    return false;
+    return leveledUp;
   }
   
   /**
@@ -129,19 +134,20 @@ abstract class BaseCharacter implements ICharacter {
    * Get the URL for the character sprite based on level
    */
   getSpriteUrl(): string {
-    // Determine which sprite milestone to use
-    let spriteLevel: number;
+    // Import helper functions to ensure consistency across the system
+    const { getLevelTier, getSpriteClass } = require('../utils/fighterSpriteHelper');
     
-    if (this.level >= 100) {
-      spriteLevel = 100;
-    } else {
-      // Find the highest multiple of 5 that is less than or equal to the level
-      // For level 1-4, use sprite 1
-      // For levels 5-9, use sprite 5, etc.
-      spriteLevel = this.level < 5 ? 1 : Math.floor(this.level / 5) * 5;
-    }
+    // Map character class to fighter class (lowercase)
+    const fighterClass = this.class.toLowerCase() as 'fighter' | 'ranged' | 'mage';
     
-    return `${this.class.toLowerCase()}${spriteLevel}.png`;
+    // Get the sprite class name (converts 'ranged' to 'archer')
+    const spriteClass = getSpriteClass(fighterClass);
+    
+    // Get the level tier based on our standardized thresholds
+    const levelTier = getLevelTier(this.level);
+    
+    // Return the filename in the format "spriteClass + levelTier + .png"
+    return `${spriteClass}${levelTier}.png`;
   }
   
   /**

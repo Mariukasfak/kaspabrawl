@@ -30,7 +30,28 @@ const FighterCard: React.FC<FighterCardProps> = ({
       
       <div className="aspect-square bg-gray-700 rounded-lg mb-4 flex items-center justify-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-gray-900 opacity-50"></div>
-        <span className="text-6xl z-10">{design?.emoji || '👤'}</span>
+        {design ? (
+          <div className="h-full w-full flex items-center justify-center">
+            <img 
+              src={`/assets/fighters/${design.name}/${design.name === 'ranged' ? 'archer' : design.name}1.png`}
+              alt={design.name}
+              className="max-h-full max-w-full object-contain z-10"
+              onError={(e) => {
+                // Fallback to emoji if image fails to load
+                e.currentTarget.style.display = 'none';
+                const parent = e.currentTarget.parentElement;
+                if (parent) {
+                  const emoji = document.createElement('span');
+                  emoji.className = 'text-6xl z-10';
+                  emoji.textContent = design.emoji;
+                  parent.appendChild(emoji);
+                }
+              }}
+            />
+          </div>
+        ) : (
+          <span className="text-6xl z-10">👤</span>
+        )}
         
         {/* Special effects for winner */}
         {isWinner && (
@@ -47,7 +68,11 @@ const FighterCard: React.FC<FighterCardProps> = ({
         </p>
         
         {design && (
-          <p className="text-sm text-purple-400 mt-1">{design.name}</p>
+          <p className="text-sm text-purple-400 mt-1">
+            {design.name === 'fighter' ? 'Fighter' : 
+             design.name === 'ranged' ? 'Ranger' : 
+             design.name === 'mage' ? 'Mage' : design.name}
+          </p>
         )}
         
         {design && showStats && (

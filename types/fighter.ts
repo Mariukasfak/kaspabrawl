@@ -1,7 +1,7 @@
 import { Stats, EquipmentLoadout, calculateTotalStats, EquipmentSlot, Equipment } from './equipment';
 import { SpecialAbility } from './characterAbilities';
 
-export type FighterClass = 'Warrior' | 'Rogue' | 'Mage' | 'Ranger' | 'Cleric';
+export type FighterClass = 'fighter' | 'ranged' | 'mage';
 
 // Character progression-related types for fighter integration
 export interface FighterProgression {

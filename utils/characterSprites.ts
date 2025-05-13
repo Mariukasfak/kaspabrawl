@@ -3,8 +3,12 @@
  * Creates and manages character sprites for different classes and levels
  */
 
-// Character classes
-export type CharacterSpriteClass = 'fighter' | 'mage' | 'ranger';
+// Import FighterClass to ensure consistency with fighter types
+import { FighterClass } from '../types/fighter';
+import { getLevelTier, getSpriteClass } from './fighterSpriteHelper';
+
+// Character classes should match FighterClass for consistency
+export type CharacterSpriteClass = FighterClass;
 
 /**
  * Generate sprite name based on character class and level
@@ -14,19 +18,11 @@ export type CharacterSpriteClass = 'fighter' | 'mage' | 'ranger';
  * @returns string - Filename for the sprite
  */
 export function generateSpriteName(characterClass: CharacterSpriteClass, level: number): string {
-  // Determine which sprite milestone to use
-  let spriteLevel: number;
+  // Use the helper functions from fighterSpriteHelper for consistency
+  const spriteClass = getSpriteClass(characterClass);
+  const levelTier = getLevelTier(level);
   
-  if (level >= 100) {
-    spriteLevel = 100;
-  } else {
-    // Find the highest multiple of 5 that is less than or equal to the level
-    // For level 1-4, use sprite 1
-    // For levels 5-9, use sprite 5, etc.
-    spriteLevel = level < 5 ? 1 : Math.floor(level / 5) * 5;
-  }
-  
-  return `${characterClass}${spriteLevel}.png`;
+  return `${spriteClass}${levelTier}.png`;
 }
 
 /**
@@ -36,5 +32,7 @@ export function generateSpriteName(characterClass: CharacterSpriteClass, level: 
  * @returns string - Full path to the sprite
  */
 export function getCharacterSpritePath(characterClass: CharacterSpriteClass, level: number): string {
-  return `/assets/fighters/${generateSpriteName(characterClass, level)}`;
+  // Use the fighter sprite path helper function to ensure consistency
+  const { getFighterSpritePath } = require('./fighterSpriteHelper');
+  return getFighterSpritePath(characterClass, level);
 }

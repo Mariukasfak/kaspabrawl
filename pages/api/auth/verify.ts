@@ -27,27 +27,46 @@ export default async function handler(
   }
 
   try {
+    // Log the request for debugging
+    console.log('Verify request received');
+    console.log('Headers:', req.headers);
+    console.log('Request body type:', typeof req.body);
+    
     // Ensure request has the correct content type
     const contentType = req.headers['content-type'];
     if (!contentType || !contentType.includes('application/json')) {
+      console.error('Invalid content type:', contentType);
       return res.status(415).json({ error: 'Content-Type must be application/json' });
     }
 
+    // Log the entire request body for debugging
+    console.log('Request body (partial):', JSON.stringify(req.body).slice(0, 200));
+    
     const { nonce, signature, publicKey, address } = req.body as VerifyRequest;
     
-    // Validate inputs
+    // Validate inputs with detailed logging
     if (!nonce) {
+      console.error('Missing nonce in request');
       return res.status(400).json({ error: 'Missing nonce' });
     }
     if (!signature) {
+      console.error('Missing signature in request');
       return res.status(400).json({ error: 'Missing signature' });
     }
     if (!publicKey) {
+      console.error('Missing publicKey in request');
       return res.status(400).json({ error: 'Missing publicKey' });
     }
     if (!address) {
+      console.error('Missing address in request');
       return res.status(400).json({ error: 'Missing address' });
     }
+    
+    // Log validation success
+    console.log('Request validation successful');
+    console.log('Nonce:', nonce.slice(0, 10) + '...');
+    console.log('Signature:', signature.slice(0, 10) + '...');
+    console.log('Address:', address);
     
     // Verify nonce exists in the database
     const storedNonce = await getNonce(nonce);

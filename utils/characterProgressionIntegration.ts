@@ -15,11 +15,9 @@ import { getCharacterSpritePath } from './characterSprites';
  */
 export function mapFighterClassToCharacterClass(fighterClass: FighterClass): CharacterClass | null {
   const classMap: Record<FighterClass, CharacterClass | null> = {
-    'Warrior': 'Fighter',
-    'Rogue': 'Ranger',    // Map Rogue to Ranger as a close approximation
-    'Mage': 'Mage',
-    'Ranger': 'Ranger',
-    'Cleric': 'Mage'      // Map Cleric to Mage as a close approximation
+    'fighter': 'Fighter',
+    'ranged': 'Ranger',
+    'mage': 'Mage'
   };
   
   return classMap[fighterClass];
@@ -130,14 +128,11 @@ export function getFighterSpecialAbilities(fighter: Fighter): SpecialAbility[] {
  * @returns Path to the sprite image
  */
 export function getFighterSpritePath(fighter: Fighter): string {
-  const characterClass = mapFighterClassToCharacterClass(fighter.class);
+  // Import and use the helper function from fighterSpriteHelper
+  const { getFighterSpritePath: helperGetFighterSpritePath } = require('./fighterSpriteHelper');
   
-  if (!characterClass) {
-    // Return default sprite if no mapping
-    return '/assets/fighters/default1.png';
-  }
-  
-  return getCharacterSpritePath(characterClass.toLowerCase() as any, fighter.level);
+  // Use the fighter sprite helper function to ensure consistency
+  return helperGetFighterSpritePath(fighter.class, fighter.level);
 }
 
 /**
@@ -151,18 +146,14 @@ export function getFighterSpriteUrl(fighter: Fighter): string | null {
     return null;
   }
   
-  // Determine which sprite milestone to use
-  let spriteLevel: number;
+  // Import the sprite helper functions
+  const { getSpriteClass, getLevelTier } = require('./fighterSpriteHelper');
   
-  if (fighter.level >= 100) {
-    spriteLevel = 100;
-  } else {
-    // Find the highest multiple of 5 that is less than or equal to the level
-    // For level 1-4, use sprite 1
-    spriteLevel = fighter.level < 5 ? 1 : Math.floor(fighter.level / 5) * 5;
-  }
+  const spriteClass = getSpriteClass(fighter.class);
+  const levelTier = getLevelTier(fighter.level);
   
-  return `${characterClass.toLowerCase()}${spriteLevel}.png`;
+  // Return just the filename portion
+  return `${spriteClass}${levelTier}.png`;
 }
 
 /**
@@ -220,7 +211,7 @@ export async function updateFighterProgression(
       const { default: prisma } = await import('../lib/prisma');
       
       // Update fighter data in database
-      await prisma.FighterData.upsert({
+      await prisma.fighterData.upsert({
         where: { userId: fighter.id },
         update: {
           level: character.level,

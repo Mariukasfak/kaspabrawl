@@ -164,4 +164,5 @@ export class World {
   }
 }
 
-export default { Entity, World, Component, System };
+// Export concrete classes but not interfaces
+export default { Entity, World };

@@ -800,12 +800,11 @@ export default class BattleArena extends Phaser.Scene {
     const graphics = this.make.graphics({ x: 0, y: 0 });
     
     if (key === 'arena-bg') {
-      // Dark blue gradient background
-      const gradient = graphics.createLinearGradient(0, 0, 0, ARENA_HEIGHT);
-      gradient.addColorStop(0, '#0a0a2a');
-      gradient.addColorStop(1, '#1a1a3e');
-      graphics.fillStyle(gradient);
-      graphics.fillRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+      // Dark blue gradient background using solid colors instead of gradient for TypeScript compatibility
+      graphics.fillStyle(0x0a0a2a);
+      graphics.fillRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT/2);
+      graphics.fillStyle(0x1a1a3e);
+      graphics.fillRect(0, ARENA_HEIGHT/2, ARENA_WIDTH, ARENA_HEIGHT/2);
     } 
     else if (key === 'platform') {
       // Simple platform graphic

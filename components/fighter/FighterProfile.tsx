@@ -3,7 +3,8 @@ import { getFighterDesignByAddress } from '../../utils/fighterDesigns';
 import FighterCard from './FighterCard';
 import SpecialMoveCard from './SpecialMoveCard';
 import { Fighter } from '../../types/fighter';
-import { getFighterSpritePath, getFighterSpecialAbilities } from '../../utils/characterProgressionIntegration';
+import { getFighterSpecialAbilities } from '../../utils/characterProgressionIntegration';
+import { getFighterSpritePath } from '../../utils/fighterSpriteHelper';
 
 interface FighterProfileProps {
   fighter: Fighter; // Changed from address to full fighter object

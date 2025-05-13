@@ -19,6 +19,9 @@ export class BlockchainComponent implements Component {
   // Transaction hash that created this entity
   public mintTxHash: string | null = null;
   
+  // Transaction hashes for battles this entity has participated in
+  public battleTxHashes: string[] = [];
+  
   // Rarity determined by blockchain factors
   public rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' = 'common';
   
@@ -39,6 +42,7 @@ export class BlockchainComponent implements Component {
     this.ownerAddress = data?.ownerAddress || null;
     this.tokenUri = data?.tokenUri || null;
     this.mintTxHash = data?.mintTxHash || null;
+    this.battleTxHashes = data?.battleTxHashes || [];
     this.rarity = data?.rarity || 'common';
     this.blockchainAttributes = data?.blockchainAttributes || {
       speedBoost: 0,
@@ -55,6 +59,7 @@ export class BlockchainComponent implements Component {
     if (data.ownerAddress) this.ownerAddress = data.ownerAddress;
     if (data.tokenUri) this.tokenUri = data.tokenUri;
     if (data.rarity) this.rarity = data.rarity;
+    if (data.battleTxHashes) this.battleTxHashes = data.battleTxHashes;
     
     if (data.blockchainAttributes) {
       this.blockchainAttributes = {
@@ -73,6 +78,7 @@ export class BlockchainComponent implements Component {
       ownerAddress: this.ownerAddress,
       tokenUri: this.tokenUri,
       mintTxHash: this.mintTxHash,
+      battleTxHashes: this.battleTxHashes,
       rarity: this.rarity,
       blockchainAttributes: { ...this.blockchainAttributes }
     };

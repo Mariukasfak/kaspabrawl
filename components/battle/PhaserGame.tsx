@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { FightStep, Fighter } from '../../utils/simulateFight';
 import BattleArena from './BattleArena';
 import { EquipmentSlot, Equipment, EquipmentLoadout } from '../../types/equipment';
+import { getFighterSpriteKey } from '../../utils/fighterSpriteHelper';
 
 interface GameProps {
   walletAddress?: string | null;
@@ -72,6 +73,72 @@ class MainScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Gets the appropriate fighter sprite key based on fighter class and level
+   * Handles level-based sprite system with different visual appearances
+   * @param fighter - The fighter object
+   * @returns - The texture key for the fighter sprite
+   */
+  getFighterSpriteKey(fighter?: Fighter): string {
+    if (!fighter) return 'fighter-fighter-1';
+    
+    const fighterClass = fighter.class.toLowerCase() as 'fighter' | 'ranged' | 'mage';
+    
+    // Use the helper to get the sprite key
+    const spriteKey = getFighterSpriteKey(fighterClass, fighter.level);
+    
+    // Check if sprite exists
+    if (this.textures.exists(spriteKey)) {
+      return spriteKey;
+    } else {
+      console.warn(`Fighter sprite ${spriteKey} not found, using fallback`);
+      
+      // Try a fallback sprite for the fighter class
+      const fallbackKey = `fighter-${fighterClass === 'ranged' ? 'archer' : fighterClass}-1`;
+      if (this.textures.exists(fallbackKey)) {
+        return fallbackKey;
+      }
+      
+      // Ultimate fallback
+      return 'fighter-fighter-1';
+    }
+  }
+
+  /**
+   * Debug function to check if textures for fighter sprites are loaded
+   */
+  debugFighterTextures() {
+    // List of expected sprite keys
+    const levelTiers = [1, 5, 10, 15, 95, 100];
+    const fighterClasses = ['fighter', 'archer', 'mage']; 
+    
+    console.log('--- Available Textures Debug ---');
+    
+    // Check each expected texture key
+    for (const fighterClass of fighterClasses) {
+      for (const level of levelTiers) {
+        const spriteKey = `fighter-${fighterClass}-${level}`;
+        const exists = this.textures.exists(spriteKey);
+        console.log(`Texture ${spriteKey}: ${exists ? 'LOADED ✓' : 'MISSING ✗'}`);
+        
+        if (!exists) {
+          // Create a transparent placeholder texture if missing
+          const graphics = this.make.graphics({ x: 0, y: 0 });
+          graphics.fillStyle(0xffffff, 0); // Transparent white
+          graphics.fillRect(0, 0, 100, 200); // Simple rectangle for fighter
+          graphics.generateTexture(spriteKey, 100, 200);
+          console.log(`Created placeholder texture for: ${spriteKey}`);
+        }
+      }
+    }
+    
+    // Check fallbacks
+    console.log(`Fallback fighter1: ${this.textures.exists('fighter1') ? 'LOADED ✓' : 'MISSING ✗'}`);
+    console.log(`Fallback fighter2: ${this.textures.exists('fighter2') ? 'LOADED ✓' : 'MISSING ✗'}`);
+    
+    console.log('-------------------------------');
+  }
+
   constructor() {
     super({ key: 'MainScene' });
   }
@@ -94,23 +161,46 @@ class MainScene extends Phaser.Scene {
     // Load all required images for the game
     this.load.image('background', '/images/arena-bg.png');
     
-    // Load individual fighter sprites based on fighter designs
-    this.load.image('fighter-berserker', '/images/fighters/berserker.png');
-    this.load.image('fighter-ninja', '/images/fighters/ninja.png');
-    this.load.image('fighter-tank', '/images/fighters/tank.png');
-    this.load.image('fighter-mage', '/images/fighters/mage.png');
-    this.load.image('fighter-rogue', '/images/fighters/rogue.png');
+    // Level thresholds for fighter sprites
+    const levelTiers = [1, 5, 10, 15, 95, 100];
     
-    // Default fallbacks
+    // Define classes - 'archer' for the sprite filename, but 'ranged' for the fighter class 
+    const spriteDefinitions = [
+      { class: 'fighter', spriteName: 'fighter' },
+      { class: 'ranged', spriteName: 'archer' },
+      { class: 'mage', spriteName: 'mage' }
+    ];
+    
+    // Load all fighter sprites with proper keys matching what getFighterSpriteKey returns
+    for (const { class: fighterClass, spriteName } of spriteDefinitions) {
+      for (const level of levelTiers) {
+        const spriteKey = `fighter-${spriteName}-${level}`;
+        const filename = `${spriteName}${level}.png`;
+        const path = `/assets/fighters/${fighterClass}/${filename}`;
+        
+        console.log(`Loading sprite ${spriteKey} from ${path}`);
+        this.load.image(spriteKey, path);
+        
+        // Set up error handling for missing sprites
+        this.load.on('loaderror', (file: { key: string }) => {
+          if (file.key === spriteKey) {
+            console.warn(`Failed to load fighter sprite: ${spriteKey}, creating fallback`);
+            // We'll create a placeholder in the debug function
+          }
+        });
+      }
+    }
+    
+    // Default fallbacks - always load these
     this.load.image('fighter1', '/images/fighter-1.png');
     this.load.image('fighter2', '/images/fighter-2.png');
     this.load.image('platform', '/images/platform.png');
     
     // Load equipment images
-    this.load.image('weapon-sword', '/images/equipment/sword.png');
-    this.load.image('weapon-axe', '/images/equipment/axe.png');
-    this.load.image('weapon-staff', '/images/equipment/staff.png');
-    this.load.image('shield', '/images/equipment/shield.png');
+    this.load.image('weapon-sword', '/assets/equipment/sword.png');
+    this.load.image('weapon-axe', '/assets/equipment/axe.png');
+    this.load.image('weapon-staff', '/assets/equipment/staff.png');
+    this.load.image('shield', '/assets/equipment/shield.png');
     
     // Optionally load particles if you use them
     this.load.image('particle1', '/images/particle1.png');
@@ -136,6 +226,9 @@ class MainScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // Debug available textures
+    this.debugFighterTextures();
+    
     // Add background with particle effect
     try {
       const background = this.add.image(width / 2, height / 2, 'background')
@@ -227,23 +320,24 @@ class MainScene extends Phaser.Scene {
     const fighter1Id = firstStep.attacker;
     const fighter2Id = firstStep.defender;
     
-    // Determine fighter sprite based on fighter design if available
-    const fighter1Design = this.fighterA?.design?.name?.toLowerCase() || '';
-    const fighter2Design = this.fighterB?.design?.name?.toLowerCase() || '';
+    // Determine fighter sprite based on fighter class and level
+    const fighter1Sprite = this.getFighterSpriteKey(this.fighterA);
+    const fighter2Sprite = this.getFighterSpriteKey(this.fighterB);
     
-    const fighter1Sprite = fighter1Design && this.textures.exists(`fighter-${fighter1Design}`) 
-      ? `fighter-${fighter1Design}` 
-      : 'fighter1';
-      
-    const fighter2Sprite = fighter2Design && this.textures.exists(`fighter-${fighter2Design}`) 
-      ? `fighter-${fighter2Design}` 
-      : 'fighter2';
+    console.log(`Fighter 1 sprite: ${fighter1Sprite}, class: ${this.fighterA?.class}, level: ${this.fighterA?.level}`);
+    console.log(`Fighter 2 sprite: ${fighter2Sprite}, class: ${this.fighterB?.class}, level: ${this.fighterB?.level}`);
+    
+    // Check if sprites exist, if not use fallback
+    const sprite1ToUse = this.textures.exists(fighter1Sprite) ? fighter1Sprite : 'fighter1';
+    const sprite2ToUse = this.textures.exists(fighter2Sprite) ? fighter2Sprite : 'fighter2';
+    
+    console.log(`Using sprite 1: ${sprite1ToUse}, sprite 2: ${sprite2ToUse}`);
     
     // Create fighters with appropriate sprites - always face each other
-    this.fighter1 = this.add.sprite(width * 0.25, height * 0.5, fighter1Sprite)
+    this.fighter1 = this.add.sprite(width * 0.25, height * 0.5, sprite1ToUse)
       .setDisplaySize(150, 150)
       .setFlipX(false); // Left fighter faces right
-    this.fighter2 = this.add.sprite(width * 0.75, height * 0.5, fighter2Sprite)
+    this.fighter2 = this.add.sprite(width * 0.75, height * 0.5, sprite2ToUse)
       .setDisplaySize(150, 150)
       .setFlipX(true); // Right fighter faces left
 
@@ -260,9 +354,8 @@ class MainScene extends Phaser.Scene {
     if (firstStep.remainingHp) {
       this.fighterCurrentHP[fighter1Id] = Math.min(this.fighterMaxHP[fighter1Id], firstStep.remainingHp.attackerHp);
       this.fighterCurrentHP[fighter2Id] = Math.min(this.fighterMaxHP[fighter2Id], firstStep.remainingHp.defenderHp);
-    } else {
-      this.fighterCurrentHP[fighter1Id] = this.fighterA?.hp || this.fighterMaxHP[fighter1Id];
-      this.fighterCurrentHP[fighter2Id] = this.fighterB?.hp || this.fighterMaxHP[fighter2Id];
+    } else {    this.fighterCurrentHP[fighter1Id] = this.fighterA?.currentHp || this.fighterMaxHP[fighter1Id];
+    this.fighterCurrentHP[fighter2Id] = this.fighterB?.currentHp || this.fighterMaxHP[fighter2Id];
     }
     
     // Create health bar backgrounds

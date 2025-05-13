@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useWalletAuth } from '../../hooks/useWalletAuth';
+import useWalletAuth from '../../hooks/useWalletAuth';
 
 /**
  * KaspaIntegration component for displaying wallet info and KASPA blockchain features
  */
 export const KaspaIntegration = () => {
-  const { address, balance, isAuthenticated, connect, disconnect } = useWalletAuth();
+  const { address, kaspaBalance, token, isConnecting, connectWallet, disconnectWallet } = useWalletAuth();
   const [kaspaPrice, setKaspaPrice] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const isAuthenticated = !!address && !!token;
 
   // Mock function to simulate fetching KASPA price
   useEffect(() => {
@@ -41,10 +42,11 @@ export const KaspaIntegration = () => {
         <div className="text-center py-6">
           <p className="mb-4">Connect your KASPA wallet to access blockchain features</p>
           <button 
-            onClick={connect}
+            onClick={connectWallet}
             className="bg-kaspa hover:bg-kaspa-light text-white font-bold py-2 px-6 rounded-full transition-all"
+            disabled={isConnecting}
           >
-            Connect Wallet
+            {isConnecting ? 'Connecting...' : 'Connect Wallet'}
           </button>
         </div>
       ) : (
@@ -56,12 +58,12 @@ export const KaspaIntegration = () => {
             </div>
             <div className="flex justify-between items-center mt-2">
               <span className="text-sm">Balance:</span>
-              <span className="font-bold">{balance} KAS</span>
+              <span className="font-bold">{kaspaBalance || '0'} KAS</span>
             </div>
             {kaspaPrice && (
               <div className="flex justify-between items-center mt-2">
                 <span className="text-sm">Value (USD):</span>
-                <span>${(Number(balance) * kaspaPrice).toFixed(2)}</span>
+                <span>${(Number(kaspaBalance || '0') * kaspaPrice).toFixed(2)}</span>
               </div>
             )}
           </div>
@@ -77,7 +79,7 @@ export const KaspaIntegration = () => {
           </div>
 
           <button 
-            onClick={disconnect}
+            onClick={disconnectWallet}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-4 rounded-md transition-all text-sm"
           >
             Disconnect

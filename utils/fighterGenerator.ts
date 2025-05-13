@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Fighter } from '../utils/simulateFight';
+import { Fighter, FighterClass } from '../types/fighter';
 import { Stats, EquipmentLoadout } from '../types/equipment';
 import { generateEquipmentSet } from './equipmentGenerator';
 
@@ -21,12 +21,13 @@ export function generateBaseStats(address: string): Stats {
   return {
     strength: rng(1),
     agility: rng(2),
-    vitality: rng(3),
-    defense: rng(4),
-    critChance: rng(5) / 10,    // 0.5 - 1.5
-    critDamage: 1.5 + rng(6) / 10, // 1.5 - 2.5
-    blockRate: rng(7) / 10,     // 0.5 - 1.5
-    magicFind: rng(8) / 5,      // 1 - 3
+    intelligence: rng(3), // Add intelligence for mage abilities
+    vitality: rng(4),
+    defense: rng(5),
+    critChance: rng(6) / 10,    // 0.5 - 1.5
+    critDamage: 1.5 + rng(7) / 10, // 1.5 - 2.5
+    blockRate: rng(8) / 10,     // 0.5 - 1.5
+    magicFind: rng(9) / 5,      // 1 - 3
   };
 }
 
@@ -66,6 +67,11 @@ export function createNewFighter(id: string, address: string): Fighter {
   const maxHp = calculateMaxHp(1, baseStats.vitality);
   const maxEnergy = calculateMaxEnergy(1);
   
+  // Determine fighter class based on address
+  const addressNum = parseInt(address.slice(-4), 16) || 0;
+  const fighterClasses: FighterClass[] = ['fighter', 'ranged', 'mage'];
+  const fighterClass = fighterClasses[addressNum % fighterClasses.length];
+  
   // Return complete fighter object
   return {
     id,
@@ -73,12 +79,21 @@ export function createNewFighter(id: string, address: string): Fighter {
     name: address.slice(0, 8), // Use shortened address as name
     level: 1,
     experience: 0,
+    class: fighterClass,
     baseStats,
     equipment,
-    hp: maxHp,
+    currentHp: maxHp,
     maxHp,
     energy: maxEnergy,
     maxEnergy,
     skills: [], // Skills will be calculated based on stats + equipment
+    statusEffects: [],
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    progression: {
+      unallocatedStatPoints: 0,
+      characterAbilities: []
+    }
   };
 }

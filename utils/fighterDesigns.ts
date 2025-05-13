@@ -19,9 +19,9 @@ export type FighterDesign = {
 
 export const fighterDesigns: FighterDesign[] = [
   {
-    name: 'Berserker',
-    description: 'A raging warrior with high strength but low defense',
-    emoji: '👹',
+    name: 'fighter',
+    description: 'A powerful melee fighter with high strength',
+    emoji: '⚔️',
     baseStats: {
       strength: 9,
       agility: 6,
@@ -44,9 +44,9 @@ export const fighterDesigns: FighterDesign[] = [
     ]
   },
   {
-    name: 'Ninja',
-    description: 'Fast and agile fighter with deadly precision',
-    emoji: '🥷',
+    name: 'ranged',
+    description: 'Fast and agile archer with deadly precision',
+    emoji: '🏹',
     baseStats: {
       strength: 6,
       agility: 10,
@@ -69,32 +69,7 @@ export const fighterDesigns: FighterDesign[] = [
     ]
   },
   {
-    name: 'Tank',
-    description: 'Heavily armored fighter with high defense',
-    emoji: '🛡️',
-    baseStats: {
-      strength: 7,
-      agility: 3,
-      vitality: 8,
-      defense: 10
-    },
-    specialMoves: [
-      {
-        name: 'Shield Bash',
-        description: 'Bashes opponent with shield, stunning them',
-        damage: 10,
-        cooldown: 2
-      },
-      {
-        name: 'Fortify',
-        description: 'Increases defense temporarily',
-        damage: 0,
-        cooldown: 3
-      }
-    ]
-  },
-  {
-    name: 'Mage',
+    name: 'mage',
     description: 'Mystical fighter with powerful spells',
     emoji: '🧙',
     baseStats: {
@@ -115,31 +90,6 @@ export const fighterDesigns: FighterDesign[] = [
         description: 'Freezes opponent temporarily',
         damage: 15,
         cooldown: 3
-      }
-    ]
-  },
-  {
-    name: 'Rogue',
-    description: 'Sneaky fighter with critical hit abilities',
-    emoji: '🥷',
-    baseStats: {
-      strength: 7,
-      agility: 8,
-      vitality: 5,
-      defense: 4
-    },
-    specialMoves: [
-      {
-        name: 'Backstab',
-        description: 'Attack from behind for massive damage',
-        damage: 25,
-        cooldown: 3
-      },
-      {
-        name: 'Smoke Bomb',
-        description: 'Throws a smoke bomb to escape and recover',
-        damage: 0,
-        cooldown: 4
       }
     ]
   }

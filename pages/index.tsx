@@ -10,25 +10,40 @@ import MatchmakingOverlay from '../components/ui/MatchmakingOverlay';
 import FighterCard from '../components/fighter/FighterCard';
 import FighterProfile from '../components/fighter/FighterProfile';
 import LevelUpModal from '../components/fighter/LevelUpModal';
+import CharacterManagement from '../components/fighter/CharacterManagement';
 import { FightLogListItem, MatchmakeResponse, FightResponse } from '../types';
 import { getFighterDesignByAddress } from '../utils/fighterDesigns';
 import { ICharacter, createCharacter } from '../types/characterProgression';
-import { Fighter } from '../types/fighter';
+import { Fighter, FighterClass } from '../types/fighter';
 import { createCharacterFromFighter, updateFighterProgression } from '../utils/characterProgressionIntegration';
+import { SaveSystem } from '../utils/saveSystem';
+import { KaspaWalletAuthProvider, useKaspaWalletAuth } from '../components/blockchain/KaspaWalletAuth';
+import { getLevelTier, getSpriteClass } from '../utils/fighterSpriteHelper';
 
 // Dynamically load the Phaser component to prevent SSR issues
 const PhaserGame = dynamic(() => import('../components/battle/PhaserGame'), {
   ssr: false,
 });
 
-export default function Home() {
+// Wrap the main component to provide wallet authentication
+export default function HomeWrapper() {
+  return (
+    <KaspaWalletAuthProvider>
+      <HomeContent />
+    </KaspaWalletAuthProvider>
+  );
+}
+
+function HomeContent() {
   const router = useRouter();
   const { address, token, isGuest, connectWallet, connectAsGuest } = useWalletAuth();
+  const { isAuthenticated, walletAddress } = useKaspaWalletAuth();
   const [gameState, setGameState] = useState<'lobby' | 'fighting' | 'matchmaking'>('lobby');
   const [recentBattles, setRecentBattles] = useState<FightLogListItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLoadingBattles, setIsLoadingBattles] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [showWalletHelp, setShowWalletHelp] = useState<boolean>(false);
   const [currentOpponent, setCurrentOpponent] = useState<string | null>(null);
   const [currentFightLog, setCurrentFightLog] = useState<FightResponse | null>(null);
   const [fighter, setFighter] = useState<Fighter | null>(null);
@@ -39,54 +54,119 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
   
-  // Initialize fighter with the address
+  // Initialize fighter with saved data or create new
   useEffect(() => {
-    if (address) {
-      const fighterDesign = getFighterDesignByAddress(address);
-      setFighter({
-        id: address,
-        address: address,
-        name: fighterDesign.name || 'Fighter',
-        level: 1,
-        experience: 0,
-        baseStats: {
-          strength: 10,
-          agility: 8,
-          vitality: 9,
-          intelligence: 7,
-          defense: 7,
-          critChance: 0.1,
-          critDamage: 1.5,
-          blockRate: 0.1,
-          magicFind: 1.0
-        },
-        equipment: {
-          head: null,
-          chest: null,
-          legs: null,
-          weapon: null,
-          offhand: null,
-          accessory1: null,
-          accessory2: null
-        },
-        currentHp: 100,
-        maxHp: 100,
-        energy: 100,
-        maxEnergy: 100,
-        skills: [],
-        class: 'Warrior',
-        statusEffects: [],
-        wins: 0,
-        losses: 0,
-        draws: 0,
-        progression: {
-          unallocatedStatPoints: 0,
-          characterAbilities: [],
-          lastLevelUpTime: undefined
+    const loadFighterData = async () => {
+      if (address) {
+        try {
+          setIsLoading(true);
+          
+          // Check for saved fighter first
+          const savedFighter = await SaveSystem.loadFighter(isAuthenticated, walletAddress || undefined);
+          
+          if (savedFighter) {
+            console.log('Loaded saved fighter:', savedFighter);
+            setFighter(savedFighter);
+          } else {
+            // Create a new fighter if none exists
+            const fighterDesign = getFighterDesignByAddress(address);
+            const defaultClass: FighterClass = 'fighter'; // Default to fighter class
+            
+            const newFighter: Fighter = {
+              id: address,
+              address: address,
+              name: fighterDesign.name || 'Fighter',
+              level: 1,
+              experience: 0,
+              baseStats: {
+                strength: 10,
+                agility: 8,
+                vitality: 9,
+                intelligence: 7,
+                defense: 7,
+                critChance: 5,
+                critDamage: 150,
+                blockRate: 10,
+                magicFind: 0
+              },
+              equipment: {
+                head: undefined,
+                chest: undefined,
+                legs: undefined,
+                weapon: undefined
+              },
+              currentHp: 100,
+              maxHp: 100,
+              energy: 100,
+              maxEnergy: 100,
+              skills: [],
+              class: defaultClass,
+              statusEffects: [],
+              wins: 0,
+              losses: 0,
+              draws: 0,
+              progression: {
+                unallocatedStatPoints: 0,
+                characterAbilities: [],
+              }
+            };
+            
+            // Save the new fighter
+            await SaveSystem.saveFighter(newFighter, isAuthenticated, walletAddress || undefined);
+            setFighter(newFighter);
+            
+            // Redirect to character creation for proper setup
+            router.push('/create-character');
+          }
+        } catch (err) {
+          console.error('Error loading fighter data:', err);
+          setError(err instanceof Error ? err.message : 'Failed to load character data');
+        } finally {
+          setIsLoading(false);
         }
-      });
+      } else {
+        // No wallet connection yet
+        setFighter(null);
+      }
+    };
+    
+    loadFighterData();
+  }, [address, isAuthenticated, walletAddress, router]);
+  
+  // Save fighter data whenever it changes
+  useEffect(() => {
+    const saveFighterData = async () => {
+      if (fighter && (isAuthenticated || isGuest)) {
+        try {
+          console.log('Saving fighter data:', fighter);
+          await SaveSystem.saveFighter(fighter, isAuthenticated, walletAddress || undefined);
+        } catch (err) {
+          console.error('Error saving fighter data:', err);
+          // Don't show error to user for automatic saves
+        }
+      }
+    };
+    
+    saveFighterData();
+  }, [fighter, isAuthenticated, isGuest, walletAddress]);
+
+  // Handle profile data updating when stats/progression change
+  const updateFighterData = async (updatedFighter: Fighter) => {
+    try {
+      setFighter(updatedFighter);
+      
+      // Save to persistence system
+      await SaveSystem.saveFighter(updatedFighter, isAuthenticated, walletAddress || undefined);
+    } catch (err) {
+      console.error('Error updating fighter data:', err);
+      setError('Failed to save fighter data. Please try again.');
     }
-  }, [address]);
+  };
+
+  // Add button to redirect to character selection/creation
+  const handleCreateNewCharacter = () => {
+    router.push('/create-character');
+  };
 
   // Load recent battles
   const loadRecentBattles = async () => {
@@ -108,6 +188,62 @@ export default function Home() {
     }
   };
   
+  // ADDITIONAL CODE: Render welcome section when no fighter exists
+  const renderWelcomeSection = () => {
+    return (
+      <div className="min-h-[70vh] bg-gradient-to-b from-gray-900 to-gray-800 text-white px-4 py-12 rounded-lg">
+        <div className="container mx-auto">
+          <h1 className="text-5xl font-bold text-center mb-4">Kaspa Brawl</h1>
+          <h2 className="text-2xl text-center text-gray-300 mb-12">Fast-paced 1v1 arena duels</h2>
+          
+          <div className="max-w-md mx-auto bg-gray-800 rounded-xl shadow-lg overflow-hidden p-8">
+            <h2 className="text-2xl font-semibold mb-4">Welcome to Kaspa Brawl!</h2>
+            <p className="text-gray-300 mb-6">
+              Create your fighter and enter the arena to test your skills against other fighters!
+            </p>
+            
+            <button
+              onClick={() => router.push('/create-character')}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-4 transition-colors"
+            >
+              Start New Game
+            </button>
+            
+            {!isAuthenticated && (
+              <div className="mt-6 p-4 border border-yellow-600 rounded-lg">
+                <p className="text-yellow-400 mb-2">
+                  Playing as guest? Your progress will be saved in your browser. 
+                </p>
+                <p className="text-yellow-400">
+                  To access your character from any device, connect with KaspaWallet.
+                </p>
+                <button
+                  onClick={() => connectWallet()}
+                  className="mt-4 w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 rounded transition-colors"
+                >
+                  Connect Wallet
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (!hydrated) {
+    return null; // Prevent hydration mismatch
+  }
+  
+  // Redirect to character creation if no fighter exists
+  if (!fighter && !isLoading) {
+    return (
+      <Layout>
+        {renderWelcomeSection()}
+      </Layout>
+    );
+  }
+
   // Load recent battles on initial page load
   useEffect(() => {
     loadRecentBattles();
@@ -136,112 +272,147 @@ export default function Home() {
             <p className="text-gray-400">Loading...</p>
           </div>
         ) : address && fighter ? (
-          <FighterProfile
-            fighter={fighter}
-            isGuest={isGuest}
-            isLoading={isLoading}
-            onFindOpponent={async () => {
-              try {
-                setGameState('matchmaking');
-                setIsLoading(true);
-                setError(null);
-                // Step 1: Find an opponent
-                const matchmakeResponse = await fetch('/api/matchmake', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    player: address
-                  })
-                });
-                if (!matchmakeResponse.ok) {
-                  throw new Error('Failed to find opponent');
-                }
-                const matchData: MatchmakeResponse = await matchmakeResponse.json();
-                setCurrentOpponent(matchData.opponent);
-                setGameState('fighting');
-                // Step 2: Execute the fight
-                const fightResponse = await fetch('/api/fight', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    playerA: address,
-                    playerB: matchData.opponent
-                  })
-                });
-                if (!fightResponse.ok) {
-                  throw new Error('Failed to execute fight');
-                }
-                const fightData: FightResponse = await fightResponse.json();
-                setCurrentFightLog(fightData);
-                
-                // Check for level up in progression data
-                if (fightData.progression) {
-                  const isPlayerAWinner = true; // assume we are player A for this demo
-                  const progressionData = isPlayerAWinner ? fightData.progression.winner : fightData.progression.loser;
-                  
-                  if (progressionData.leveledUp && fighter) {
-                    // Create a character object from fighter for level up modal
-                    let character = createCharacterFromFighter(fighter);
-                    
-                    if (!character) {
-                      // If conversion fails, create a default character
-                      character = createCharacter(
-                        fighter.name || 'Fighter',
-                        fighter.class === 'Mage' ? 'Mage' : 
-                        fighter.class === 'Ranger' || fighter.class === 'Rogue' ? 'Ranger' : 'Fighter'
-                      );
-                    }
-                    
-                    // Update to new level from fight results
-                    character.level = progressionData.newLevel || (fighter.level + 1);
-                    // Add 3 free stat points for level up
-                    character.freePoints = (fighter.progression?.unallocatedStatPoints || 0) + 3;
-                    
-                    // Update fighter with new level
-                    setFighter({
-                      ...fighter,
-                      level: character.level,
-                      progression: {
-                        ...fighter.progression,
-                        unallocatedStatPoints: character.freePoints
-                      }
-                    });
-                    
-                    // Show level up modal
-                    setLevelUpCharacter(character);
-                    setShowLevelUpModal(true);
+          <>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Your Fighter</h2>
+              <button
+                onClick={handleCreateNewCharacter}
+                className="text-sm bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded"
+              >
+                Create New Character
+              </button>
+            </div>
+            <FighterProfile
+              fighter={fighter}
+              isGuest={isGuest}
+              isLoading={isLoading}
+              onFindOpponent={async () => {
+                try {
+                  setGameState('matchmaking');
+                  setIsLoading(true);
+                  setError(null);
+                  // Step 1: Find an opponent
+                  const matchmakeResponse = await fetch('/api/matchmake', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      player: address
+                    })
+                  });
+                  if (!matchmakeResponse.ok) {
+                    throw new Error('Failed to find opponent');
                   }
+                  const matchData: MatchmakeResponse = await matchmakeResponse.json();
+                  setCurrentOpponent(matchData.opponent);
+                  setGameState('fighting');
+                  // Step 2: Execute the fight
+                  const fightResponse = await fetch('/api/fight', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      playerA: address,
+                      playerB: matchData.opponent
+                    })
+                  });
+                  if (!fightResponse.ok) {
+                    throw new Error('Failed to execute fight');
+                  }
+                  const fightData: FightResponse = await fightResponse.json();
+                  setCurrentFightLog(fightData);
+                  
+                  // Check for level up in progression data
+                  if (fightData.progression) {
+                    const isPlayerAWinner = true; // assume we are player A for this demo
+                    const progressionData = isPlayerAWinner ? fightData.progression.winner : fightData.progression.loser;
+                    
+                    if (progressionData.leveledUp && fighter) {
+                      // Create a character object from fighter for level up modal
+                      let character = createCharacterFromFighter(fighter);
+                      
+                      if (!character) {
+                        // If conversion fails, create a default character
+                        // Map FighterClass to CharacterClass
+                        let characterClass = 'Fighter'; // Default
+                        if (fighter.class === 'mage') characterClass = 'Mage';
+                        else if (fighter.class === 'ranged') characterClass = 'Ranger';
+                        
+                        character = createCharacter(
+                          fighter.name || 'Fighter',
+                          characterClass as 'Fighter' | 'Ranger' | 'Mage'
+                        );
+                      }
+                      
+                      // Update to new level from fight results
+                      character.level = progressionData.newLevel || (fighter.level + 1);
+                      // Add 3 free stat points for level up
+                      character.freePoints = (fighter.progression?.unallocatedStatPoints || 0) + 3;
+                      
+                      // Update fighter with new level
+                      setFighter({
+                        ...fighter,
+                        level: character.level,
+                        progression: {
+                          ...fighter.progression,
+                          unallocatedStatPoints: character.freePoints
+                        }
+                      });
+                      
+                      // Show level up modal
+                      setLevelUpCharacter(character);
+                      setShowLevelUpModal(true);
+                    }
+                  }
+                  
+                  // Step 3: Move to the arena page if not showing level up modal
+                  if (!showLevelUpModal) {
+                    router.push(`/arena?fightLogId=${fightData.fightLogId}`);
+                  }
+                  
+                  // Load recent battles after a successful fight
+                  loadRecentBattles();
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'An error occurred');
+                  setGameState('lobby');
+                } finally {
+                  setIsLoading(false);
                 }
-                
-                // Step 3: Move to the arena page if not showing level up modal
-                if (!showLevelUpModal) {
-                  router.push(`/arena?fightLogId=${fightData.fightLogId}`);
+              }}
+            />
+            
+            {/* Add Character Management Component */}
+            <CharacterManagement 
+              fighter={fighter}
+              onFighterUpdate={(updatedFighter) => {
+                if (updatedFighter) {
+                  updateFighterData(updatedFighter);
+                } else {
+                  // Character was deleted
+                  setFighter(null);
+                  router.push('/create-character');
                 }
-                
-                // Load recent battles after a successful fight
-                loadRecentBattles();
-              } catch (err) {
-                setError(err instanceof Error ? err.message : 'An error occurred');
-                setGameState('lobby');
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-          />
+              }}
+              onError={(errorMessage) => setError(errorMessage)}
+            />
+          </>
         ) : (
-          <div className="bg-gray-800 rounded-lg p-6 mb-8 text-center">
-            <h3 className="text-xl mb-4">Start your fighting journey</h3>
-            <p className="text-gray-400 mb-4">
-              Connect your KasWare wallet for the full experience, or try the game in guest mode.
+          <div className="bg-gray-800 rounded-lg p-6 mb-8">
+            <h3 className="text-xl mb-4 text-center">Start your fighting journey</h3>
+            <p className="text-gray-400 mb-4 text-center">
+              Connect your KaspaWallet or Kasware for the full experience, or try the game in guest mode.
               The choice is yours!
             </p>
-            <div className="flex justify-center space-x-4">
+            
+            <div className="flex justify-center space-x-4 mb-4">
               <button
-                onClick={connectWallet}
+                onClick={() => {
+                  connectWallet();
+                  // Track if the user clicked connect wallet but we should keep this notice visible
+                  setShowWalletHelp(true);
+                }}
                 className="kaspa-button"
               >
                 Connect Wallet
@@ -251,6 +422,33 @@ export default function Home() {
                 className="border border-purple-600 text-purple-400 hover:bg-purple-900 hover:text-white font-bold py-2 px-4 rounded transition-all duration-200"
               >
                 Play as Guest
+              </button>
+            </div>
+            
+            {showWalletHelp && (
+              <div className="mt-4 bg-yellow-900 bg-opacity-30 border border-yellow-700 rounded p-4 text-left">
+                <p className="text-yellow-300 mb-2">
+                  <span className="font-bold">Having trouble connecting?</span> Make sure:
+                </p>
+                <ul className="text-yellow-300 text-sm space-y-1 list-disc pl-5">
+                  <li>Your KaspaWallet or Kasware extension is installed and enabled</li>
+                  <li>Your wallet is unlocked</li>
+                  <li>You're using a supported browser (Chrome, Firefox, or Brave)</li>
+                </ul>
+                <div className="mt-3 text-center">
+                  <Link href="/wallet-test" className="text-yellow-400 underline hover:text-yellow-300">
+                    Troubleshoot Wallet Connection
+                  </Link>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-4 text-center">
+              <button 
+                onClick={() => setShowWalletHelp(!showWalletHelp)}
+                className="text-purple-400 text-sm hover:text-white underline flex items-center justify-center mx-auto"
+              >
+                {showWalletHelp ? 'Hide wallet help' : 'Need help connecting?'}
               </button>
             </div>
           </div>

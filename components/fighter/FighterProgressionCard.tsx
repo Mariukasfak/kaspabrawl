@@ -1,6 +1,7 @@
 import React from 'react';
 import { Fighter } from '../../types/fighter';
-import { getFighterSpritePath, getFighterSpecialAbilities } from '../../utils/characterProgressionIntegration';
+import { getFighterSpecialAbilities } from '../../utils/characterProgressionIntegration';
+import { getFighterSpritePath } from '../../utils/fighterSpriteHelper';
 import { SpecialAbility, AbilityType } from '../../types/characterAbilities';
 
 interface FighterProgressionCardProps {
@@ -16,7 +17,7 @@ const FighterProgressionCard: React.FC<FighterProgressionCardProps> = ({
   fighter, 
   showAbilities = true
 }) => {
-  const spritePath = getFighterSpritePath(fighter);
+  const spritePath = getFighterSpritePath(fighter.class, fighter.level);
   const abilities = showAbilities ? getFighterSpecialAbilities(fighter) : [];
   
   // Get ability icon based on type
@@ -62,7 +63,9 @@ const FighterProgressionCard: React.FC<FighterProgressionCardProps> = ({
             <h3 className="text-xl font-bold text-white">{fighter.name}</h3>
             <div className="flex items-center gap-2">
               <span className="bg-yellow-600 text-yellow-100 px-2 py-0.5 rounded text-xs">
-                {fighter.class}
+                {fighter.class === 'fighter' ? 'Fighter' : 
+                 fighter.class === 'ranged' ? 'Ranger' : 
+                 fighter.class === 'mage' ? 'Mage' : fighter.class}
               </span>
               <span className="bg-blue-600 text-blue-100 px-2 py-0.5 rounded text-xs">
                 Level {fighter.level}

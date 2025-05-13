@@ -281,22 +281,44 @@ export default function useWalletAuth() {
       
       // Verify with the server
       console.log('Sending verification to server');
+      
+      // Prepare request body with more detailed logging
+      const requestBody = {
+        nonce,
+        signature: signResult.signature,
+        publicKey: signResult.publicKey,
+        address: signResult.address,
+      };
+      
+      console.log('Request body:', {
+        nonce: nonce.substring(0, 10) + '...',
+        signature: (signResult.signature || '').substring(0, 10) + '...',
+        publicKey: (signResult.publicKey || '').substring(0, 10) + '...',
+        address: signResult.address
+      });
+      
       const verifyResponse = await fetch('/api/auth/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          nonce,
-          signature: signResult.signature,
-          publicKey: signResult.publicKey,
-          address: signResult.address,
-        }),
+        body: JSON.stringify(requestBody),
       });
       
       if (!verifyResponse.ok) {
-        const errorData = await verifyResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to verify signature');
+        let errorMessage = 'Failed to verify signature';
+        
+        try {
+          const errorData = await verifyResponse.json();
+          errorMessage = errorData.error || errorMessage;
+          console.error('Verification error details:', errorData);
+        } catch (jsonError) {
+          console.error('Error parsing verification response:', jsonError);
+          console.error('Response status:', verifyResponse.status);
+          console.error('Response text:', await verifyResponse.text().catch(() => 'Unable to get response text'));
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const { token, balance } = await verifyResponse.json();

@@ -17,6 +17,8 @@ A MyBrute-style fighting game powered by the Kaspa blockchain, offering fast-pac
 - **Stats System:** Strength, Agility, Defense, Will, and Luck attributes
 - **Special Abilities:** Active (once per battle) and passive (always-on) abilities
 - **Progression:** Level up fighters to unlock new abilities and gain stat points
+- **Fighter Classes:** Three distinct classes - Fighter (melee), Ranged (archer), and Mage
+- **Visual Progression:** Fighter sprites change appearance at key level thresholds (1, 5, 10, 15, 95, 100)
 
 ## Project Structure
 
